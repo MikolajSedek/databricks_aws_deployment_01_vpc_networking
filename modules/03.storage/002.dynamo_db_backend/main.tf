@@ -1,14 +1,3 @@
-terraform {
-  required_version = ">= 1.5.0"
-
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "6.66.0"
-    }
-  }
-}
-
 resource "aws_dynamodb_table" "this" {
   name         = local.table_name_with_env
   billing_mode = var.billing_mode
