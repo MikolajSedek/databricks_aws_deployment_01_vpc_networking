@@ -1,8 +1,16 @@
-/* Create VPC Endpoints
-They allow to route traffic through AWS backbone instead of public internet.
-NOTE: if you plan to communicate with extra AWS services from Databricks compute clusters
- running in private subnets of Spoke - add them here.
- */
+/*
+  Databricks Spoke VPC Endpoints Configuration
+  Documentation:
+    - https://docs.databricks.com/en/security/network/classic/privatelink.html
+    - https://docs.aws.amazon.com/vpc/latest/privatelink/vpc-endpoints.html
+
+  Provisions AWS VPC Endpoints in the Databricks Spoke VPC:
+    - Gateway VPC Endpoint for Amazon S3 to enable direct, high-throughput, private access
+      from Databricks compute clusters to S3 buckets without traversing NAT or internet gateways.
+    - Interface VPC Endpoints (AWS PrivateLink) for AWS STS and Amazon Kinesis to keep
+      internal AWS authentication and streaming data traffic on the AWS private network backbone.
+*/
+
 module "vpc_endpoints" {
   source  = "terraform-aws-modules/vpc/aws//modules/vpc-endpoints"
   version = "3.11.0"
@@ -18,7 +26,7 @@ module "vpc_endpoints" {
         aws_route_table.spoke_db_private_rt.id
       ])
       tags = {
-        Name = "${var.env}-s3-vpc-endpoint"
+        Name = "s3-vpc-endpoint-${var.env}"
       }
     },
     sts = {
@@ -26,7 +34,7 @@ module "vpc_endpoints" {
       private_dns_enabled = true
       subnet_ids          = aws_subnet.spoke_db_private_subnet[*].id
       tags = {
-        Name = "${var.env}-sts-vpc-endpoint"
+        Name = "sts-vpc-endpoint-${var.env}"
       }
     },
     kinesis-streams = {
@@ -34,7 +42,7 @@ module "vpc_endpoints" {
       private_dns_enabled = true
       subnet_ids          = aws_subnet.spoke_db_private_subnet[*].id
       tags = {
-        Name = "${var.env}-kinesis-vpc-endpoint"
+        Name = "kinesis-vpc-endpoint-${var.env}"
       }
     },
 

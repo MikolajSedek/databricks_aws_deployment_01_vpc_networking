@@ -1,5 +1,5 @@
 /*
-  Terraform and AWS Provider Configuration - VPC Base Module
+  Terraform and AWS Provider Configuration - Hub VPC Module
   Documentation: https://registry.terraform.io/providers/hashicorp/aws/latest/docs
 
   Declares required Terraform binary version and the AWS provider constraints.

@@ -1,3 +1,15 @@
+/*
+  AWS Key Management Service (KMS) Customer Managed Key Definition
+  Documentation:
+    - https://docs.aws.amazon.com/kms/latest/developerguide/overview.html
+    - https://docs.aws.amazon.com/kms/latest/developerguide/key-policies.html
+
+  Provisions a customer-managed KMS key (CMK) and key alias for encrypting
+  sensitive infrastructure components, such as remote Terraform state buckets
+  and DynamoDB state locking tables, with configurable automatic key rotation
+  and deletion protection windows.
+*/
+
 data "aws_caller_identity" "current" {}
 
 resource "aws_kms_key" "this" {

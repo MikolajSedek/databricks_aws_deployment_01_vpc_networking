@@ -1,3 +1,10 @@
+/*
+  Terraform and AWS Provider Configuration - Spoke VPC Module
+  Documentation: https://registry.terraform.io/providers/hashicorp/aws/latest/docs
+
+  Declares required Terraform binary version and the AWS provider constraints.
+*/
+
 terraform {
   required_version = ">= 1.5.0"
 

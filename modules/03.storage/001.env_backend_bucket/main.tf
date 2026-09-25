@@ -1,3 +1,16 @@
+/*
+  Amazon S3 Remote State Backend Bucket Definition
+  Documentation:
+    - https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html
+    - https://developer.hashicorp.com/terraform/language/settings/backends/s3
+
+  Provisions a secure Amazon S3 bucket for storing Terraform remote state files:
+    - Object versioning enabled for state history and rollback protection.
+    - Server-side encryption with AWS KMS (SSE-KMS) and bucket keys enabled.
+    - S3 Block Public Access enabled across all four public access controls.
+    - Bucket ownership controls enforced (disabling legacy ACLs).
+*/
+
 resource "aws_s3_bucket" "this" {
   bucket        = local.bucket_name_with_env
   force_destroy = var.force_destroy

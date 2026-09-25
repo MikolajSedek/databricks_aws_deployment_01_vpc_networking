@@ -1,3 +1,14 @@
+/*
+  Input Variables Definition - Dev Environment
+  Documentation:
+    - https://developer.hashicorp.com/terraform/language/values/variables
+
+  Declares configuration variables for the dev environment:
+    - Target AWS region and deployment profile.
+    - Allowed AWS Account ID with validation constraint ensuring 12-digit format.
+    - Environment name tag.
+*/
+
 variable "aws_region" {
   description = "The AWS region where resources will be deployed."
   type        = string

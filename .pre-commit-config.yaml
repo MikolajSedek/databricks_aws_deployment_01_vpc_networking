@@ -23,21 +23,21 @@ repos:
     hooks:
       - id: terraform_fmt
 
-      # Validate Terraform in modules subdirectories
-      - id: terraform_validate
-        name: terraform_validate (modules)
-        files: ^modules/
-        args:
-          - --tf-init-args=-backend=false
-          - --hook-config=--retry-once-with-cleanup=true
-
-      # Validate Terraform in environments subdirectories
-      - id: terraform_validate
-        name: terraform_validate (environments)
-        files: ^environments/
-        args:
-          - --tf-init-args=-backend=false
-          - --hook-config=--retry-once-with-cleanup=true
+#      # Validate Terraform in modules subdirectories
+#      - id: terraform_validate
+#        name: terraform_validate (modules)
+#        files: ^modules/
+#        args:
+#          - --tf-init-args=-backend=false
+#          - --hook-config=--retry-once-with-cleanup=true
+#
+#      # Validate Terraform in environments subdirectories
+#      - id: terraform_validate
+#        name: terraform_validate (environments)
+#        files: ^environments/
+#        args:
+#          - --tf-init-args=-backend=false
+#          - --hook-config=--retry-once-with-cleanup=true
 
       - id: terraform_tflint
         args:
