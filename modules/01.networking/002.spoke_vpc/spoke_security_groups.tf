@@ -18,26 +18,29 @@ resource "aws_security_group" "default_spoke_sg" {
   dynamic "ingress" {
     for_each = var.sg_ingress_protocols
     content {
-      from_port = 0
-      to_port   = 65535
-      protocol  = ingress.value
-      self      = true
+      description = "Allow inbound self-referencing cluster traffic"
+      from_port   = 0
+      to_port     = 65535
+      protocol    = ingress.value
+      self        = true
     }
   }
 
   dynamic "egress" {
     for_each = var.sg_egress_protocols
     content {
-      from_port = 0
-      to_port   = 65535
-      protocol  = egress.value
-      self      = true
+      description = "Allow outbound self-referencing cluster traffic"
+      from_port   = 0
+      to_port     = 65535
+      protocol    = egress.value
+      self        = true
     }
   }
 
   dynamic "egress" {
     for_each = var.sg_egress_ports
     content {
+      description = "Allow outbound traffic on required Databricks ports to be filtered by Hub Network Firewall"
       from_port   = egress.value
       to_port     = egress.value
       protocol    = "tcp"

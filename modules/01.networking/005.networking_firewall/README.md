@@ -3,7 +3,10 @@
 <!-- BEGIN_TF_DOCS -->
 ## Requirements
 
-No requirements.
+| Name | Version |
+|------|---------|
+| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.5.0 |
+| <a name="requirement_aws"></a> [aws](#requirement\_aws) | 6.66.0 |
 
 ## Providers
 
@@ -19,14 +22,14 @@ No modules.
 
 | Name | Type |
 |------|------|
-| [aws_networkfirewall_firewall.exfiltration_firewall](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/networkfirewall_firewall) | resource |
-| [aws_networkfirewall_firewall_policy.egress_policy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/networkfirewall_firewall_policy) | resource |
-| [aws_networkfirewall_rule_group.allow_db_cpl_protocols_rg](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/networkfirewall_rule_group) | resource |
-| [aws_networkfirewall_rule_group.databricks_fqdns_rg](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/networkfirewall_rule_group) | resource |
-| [aws_networkfirewall_rule_group.deny_protocols_rg](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/networkfirewall_rule_group) | resource |
-| [aws_route.db_igw_nat_firewall](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/route) | resource |
-| [aws_route.db_nat_firewall](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/route) | resource |
-| [aws_vpc_endpoint.firewall](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/vpc_endpoint) | data source |
+| [aws_networkfirewall_firewall.exfiltration_firewall](https://registry.terraform.io/providers/hashicorp/aws/6.66.0/docs/resources/networkfirewall_firewall) | resource |
+| [aws_networkfirewall_firewall_policy.egress_policy](https://registry.terraform.io/providers/hashicorp/aws/6.66.0/docs/resources/networkfirewall_firewall_policy) | resource |
+| [aws_networkfirewall_rule_group.allow_db_cpl_protocols_rg](https://registry.terraform.io/providers/hashicorp/aws/6.66.0/docs/resources/networkfirewall_rule_group) | resource |
+| [aws_networkfirewall_rule_group.databricks_fqdns_rg](https://registry.terraform.io/providers/hashicorp/aws/6.66.0/docs/resources/networkfirewall_rule_group) | resource |
+| [aws_networkfirewall_rule_group.deny_protocols_rg](https://registry.terraform.io/providers/hashicorp/aws/6.66.0/docs/resources/networkfirewall_rule_group) | resource |
+| [aws_route.db_igw_nat_firewall](https://registry.terraform.io/providers/hashicorp/aws/6.66.0/docs/resources/route) | resource |
+| [aws_route.db_nat_firewall](https://registry.terraform.io/providers/hashicorp/aws/6.66.0/docs/resources/route) | resource |
+| [aws_vpc_endpoint.firewall](https://registry.terraform.io/providers/hashicorp/aws/6.66.0/docs/data-sources/vpc_endpoint) | data source |
 
 ## Inputs
 

@@ -75,7 +75,7 @@ resource "aws_eip" "hub_nat_eip" {
 /* Hub NAT Gateway */
 resource "aws_nat_gateway" "hub_nat" {
   allocation_id = aws_eip.hub_nat_eip.id
-  subnet_id     = aws_subnet.hub_nat_public_subnet.*.id[0]
+  subnet_id     = aws_subnet.hub_nat_public_subnet[*].id[0]
   depends_on    = [aws_internet_gateway.hub_igw]
   tags = merge(var.tags, {
     Name = "hub-nat-${var.env}"

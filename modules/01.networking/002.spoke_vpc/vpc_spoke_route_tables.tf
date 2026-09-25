@@ -27,6 +27,6 @@ resource "aws_main_route_table_association" "spoke-set-worker-default-rt-assoc" 
 /* Routing table associations for spoke */
 resource "aws_route_table_association" "spoke_db_private_rta" {
   count          = length(var.spoke_db_private_subnets_cidr)
-  subnet_id      = aws_subnet.spoke_db_private_subnet.*.id[count.index]
+  subnet_id      = aws_subnet.spoke_db_private_subnet[count.index].id
   route_table_id = aws_route_table.spoke_db_private_rt.id
 }

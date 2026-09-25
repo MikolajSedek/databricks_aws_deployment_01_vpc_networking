@@ -23,21 +23,21 @@ repos:
     hooks:
       - id: terraform_fmt
 
-#      # Validate Terraform in modules subdirectories
-#      - id: terraform_validate
-#        name: terraform_validate (modules)
-#        files: ^modules/
-#        args:
-#          - --tf-init-args=-backend=false
-#          - --hook-config=--retry-once-with-cleanup=true
-#
-#      # Validate Terraform in environments subdirectories
-#      - id: terraform_validate
-#        name: terraform_validate (environments)
-#        files: ^environments/
-#        args:
-#          - --tf-init-args=-backend=false
-#          - --hook-config=--retry-once-with-cleanup=true
+      # Validate Terraform in modules subdirectories
+      - id: terraform_validate
+        name: terraform_validate (modules)
+        files: ^modules/
+        args:
+          - --tf-init-args=-backend=false
+          - --hook-config=--retry-once-with-cleanup=true
+
+      # Validate Terraform in environments subdirectories
+      - id: terraform_validate
+        name: terraform_validate (environments)
+        files: ^environments/
+        args:
+          - --tf-init-args=-backend=false
+          - --hook-config=--retry-once-with-cleanup=true
 
       - id: terraform_tflint
         args:
@@ -46,12 +46,14 @@ repos:
       - id: terraform_trivy
         args:
           - --args=--severity=HIGH,CRITICAL
+          - --args=--ignorefile=__GIT_WORKING_DIR__/.trivyignore
       - id: terraform_checkov
         args:
           - --args=--framework=terraform
           - --args=--compact
           - --args=--quiet
           - --args=--check=CRITICAL
+          - --args=--hard-fail-on=CRITICAL
       - id: terraform_docs
         args:
           - --hook-config=--path-to-file=README.md;--add-to-existing-file=true;--create-file-if-not-exist=true

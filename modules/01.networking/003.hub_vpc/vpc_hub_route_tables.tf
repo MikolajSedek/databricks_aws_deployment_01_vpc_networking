@@ -47,19 +47,19 @@ resource "aws_route_table" "hub_igw_rt" {
 /* Routing table associations for hub tgw */
 resource "aws_route_table_association" "hub_tgw_rta" {
   count          = length(var.hub_tgw_private_subnets_cidr)
-  subnet_id      = aws_subnet.hub_tgw_private_subnet.*.id[count.index]
+  subnet_id      = aws_subnet.hub_tgw_private_subnet[count.index].id
   route_table_id = aws_route_table.hub_tgw_private_rt.id
 }
 
 resource "aws_route_table_association" "hub_nat_rta" {
   count          = length(var.hub_nat_public_subnets_cidr)
-  subnet_id      = aws_subnet.hub_nat_public_subnet.*.id[count.index]
+  subnet_id      = aws_subnet.hub_nat_public_subnet[count.index].id
   route_table_id = aws_route_table.hub_nat_public_rt.id
 }
 
 resource "aws_route_table_association" "hub_firewall_rta" {
   count          = length(var.hub_firewall_subnets_cidr)
-  subnet_id      = aws_subnet.hub_firewall_subnet.*.id[count.index]
+  subnet_id      = aws_subnet.hub_firewall_subnet[count.index].id
   route_table_id = aws_route_table.hub_firewall_rt.id
 }
 

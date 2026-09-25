@@ -1,5 +1,5 @@
 /*
-  Terraform and AWS Provider Configuration - DynamoDB State Locking Module
+  Terraform and AWS Provider Configuration - Spoke Hub TGW Module
   Documentation: https://registry.terraform.io/providers/hashicorp/aws/latest/docs
 
   Declares required Terraform binary version and the AWS provider constraints.
