@@ -106,14 +106,11 @@ jobs:
         run: |
           uv sync --frozen
           echo "$PWD/.venv/bin" >> $GITHUB_PATH
-
-      # Run Pre-commit hooks using official pre-commit GitHub plugin (v3)
-      - name: Run Pre-commit Hooks
-        uses: pre-commit/action@v3.0.1
-        with:
-          extra_args: --all-files
-        env:
-          SKIP: ''
+      # Run pre-commit checks
+      - name: Run precommit
+        run: |
+          uv run pre-commit run terraform_validate --all-files
+          
 
   # ============================================================================
   # STEP 2: TERRAFORM VALIDATE & PLAN
