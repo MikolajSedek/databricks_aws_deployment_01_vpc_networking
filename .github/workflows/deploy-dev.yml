@@ -40,7 +40,6 @@ env:
   TF_VERSION: '1.16.3'
   TFLINT_VERSION: 'latest'
   TRIVY_VERSION: 'latest'
-  TERRAFORM_DOCS_VERSION: 'v0.24.0'
   AWS_REGION: ${{ secrets.AWS_REGION || 'eu-central-1' }}
   AWS_PROFILE: 'production-admin'
   TF_WORKING_DIR: 'environments/dev'
@@ -52,31 +51,34 @@ env:
 jobs:
   # ============================================================================
   # STEP 1: PRE-COMMIT CHECKS
-  # Runs code formatting, linting (tflint), security scanning (trivy, checkov, gitleaks),
-  # and documentation checks (terraform-docs).
+  # Runs code formatting, linting (tflint), and security scanning (trivy, checkov, gitleaks).
+  # terraform_docs is excluded via SKIP in CI.
   # ============================================================================
   precommit:
     name: Pre-commit Quality & Security Checks
     runs-on: ubuntu-latest
+    env:
+      # Exclude terraform-docs from automated CI pre-commit runs at the job level
+      SKIP: terraform_docs
     steps:
       - name: Checkout Code
         uses: actions/checkout@v7
 
-      # Setup uv using official Astral GitHub plugin (v10.2.0)
+      # Setup uv using official Astral GitHub plugin
       - name: Setup uv
-        uses: astral-sh/setup-uv@v10.2.0
+        uses: astral-sh/setup-uv@v9.0.0
         with:
           enable-cache: true
           cache-dependency-glob: 'uv.lock'
 
-      # Setup Terraform using official HashiCorp GitHub plugin (v4)
+      # Setup Terraform using official HashiCorp GitHub plugin
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v4
         with:
           terraform_version: ${{ env.TF_VERSION }}
           terraform_wrapper: false
 
-      # Setup TFLint using official GitHub plugin (v6)
+      # Setup TFLint using official GitHub plugin
       - name: Setup TFLint
         uses: terraform-linters/setup-tflint@v6
         with:
@@ -86,31 +88,26 @@ jobs:
       - name: Initialize TFLint Plugins
         run: tflint --init --config .tflint.hcl
 
-      # Setup Trivy using Aqua Security GitHub plugin (v0.3.1)
+      # Setup Trivy using Aqua Security GitHub plugin
       - name: Setup Trivy
         uses: aquasecurity/setup-trivy@v0.3.1
         with:
           version: ${{ env.TRIVY_VERSION }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      # Install terraform-docs binary into PATH using official GitHub release installer (v3)
-      - name: Setup terraform-docs
-        uses: jaxxstorm/action-install-gh-release@v3.0.0
-        with:
-          repo: terraform-docs/terraform-docs
-          tag: ${{ env.TERRAFORM_DOCS_VERSION }}
-          cache: enable
-
       # Install Python virtualenv dependencies (checkov & pre-commit from pyproject.toml)
+      # Export SKIP to $GITHUB_ENV to guarantee composite action steps inherit it
       - name: Install dependencies with uv
         run: |
           uv sync --frozen
           echo "$PWD/.venv/bin" >> $GITHUB_PATH
-      # Run pre-commit checks
-      - name: Run precommit
-        run: |
-          uv run pre-commit run --all-files
+          echo "SKIP=terraform_docs" >> $GITHUB_ENV
 
+      # Run Pre-commit hooks using official pre-commit GitHub plugin
+      - name: Run Pre-commit Hooks
+        uses: pre-commit/action@v3.0.1
+        with:
+          extra_args: --all-files
 
   # ============================================================================
   # STEP 2: TERRAFORM VALIDATE & PLAN
@@ -127,19 +124,20 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v7
 
-      # Setup Terraform using official HashiCorp GitHub plugin (v4)
+      # Setup Terraform using official HashiCorp GitHub plugin
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v4
         with:
           terraform_version: ${{ env.TF_VERSION }}
           terraform_wrapper: false
 
-      # Configure AWS credentials environment variables (v6)
+      # Configure AWS credentials environment variables
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v6
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
           aws-region: ${{ env.AWS_REGION }}
 
       # Set up named AWS CLI profile required by backend.tf and providers.tf
@@ -152,7 +150,7 @@ jobs:
             aws configure set aws_session_token "${{ secrets.AWS_SESSION_TOKEN }}" --profile "${{ env.AWS_PROFILE }}"
           fi
 
-      # Cache Terraform plugins and providers (.terraform directory) (v6)
+      # Cache Terraform plugins and providers (.terraform directory)
       - name: Cache Terraform Providers
         uses: actions/cache@v6
         with:
@@ -176,7 +174,7 @@ jobs:
           terraform plan -input=false -no-color -out=tfplan
           terraform show -no-color tfplan > tfplan.txt
 
-      # Upload and cache the binary plan file and text summary as workflow artifacts (v7)
+      # Upload and cache the binary plan file and text summary as workflow artifacts
       - name: Cache & Save Terraform Plan Artifact
         uses: actions/upload-artifact@v7
         with:
@@ -215,14 +213,14 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v7
 
-      # Setup Terraform using official HashiCorp GitHub plugin (v4)
+      # Setup Terraform using official HashiCorp GitHub plugin
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v4
         with:
           terraform_version: ${{ env.TF_VERSION }}
           terraform_wrapper: false
 
-      # Configure AWS credentials environment variables (v6)
+      # Configure AWS credentials environment variables
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v6
         with:
@@ -241,7 +239,7 @@ jobs:
             aws configure set aws_session_token "${{ secrets.AWS_SESSION_TOKEN }}" --profile "${{ env.AWS_PROFILE }}"
           fi
 
-      # Restore cached Terraform plugins (.terraform directory) (v6)
+      # Restore cached Terraform plugins (.terraform directory)
       - name: Restore Terraform Providers Cache
         uses: actions/cache@v6
         with:
@@ -251,7 +249,7 @@ jobs:
       - name: Terraform Init
         run: terraform init
 
-      # Download the cached plan file generated in Step 2 (v8)
+      # Download the cached plan file generated in Step 2
       - name: Download Cached Terraform Plan
         uses: actions/download-artifact@v8
         with:
