@@ -40,7 +40,7 @@ env:
   TF_VERSION: '1.16.3'
   TFLINT_VERSION: 'latest'
   TRIVY_VERSION: 'latest'
-  TERRAFORM_DOCS_VERSION: 'v0.19.0'
+  TERRAFORM_DOCS_VERSION: 'v0.24.0'
   AWS_REGION: ${{ secrets.AWS_REGION || 'eu-central-1' }}
   AWS_PROFILE: 'production-admin'
   TF_WORKING_DIR: 'environments/dev'
@@ -60,25 +60,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
-      # Setup uv using the official Astral GitHub plugin
+      # Setup uv using official Astral GitHub plugin (v10.2.0)
       - name: Setup uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v10.2.0
         with:
           enable-cache: true
           cache-dependency-glob: 'uv.lock'
 
-      # Setup Terraform using official HashiCorp GitHub plugin
+      # Setup Terraform using official HashiCorp GitHub plugin (v4)
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
+        uses: hashicorp/setup-terraform@v4
         with:
           terraform_version: ${{ env.TF_VERSION }}
           terraform_wrapper: false
 
-      # Setup TFLint using official GitHub plugin
+      # Setup TFLint using official GitHub plugin (v6)
       - name: Setup TFLint
-        uses: terraform-linters/setup-tflint@v4
+        uses: terraform-linters/setup-tflint@v6
         with:
           tflint_version: ${{ env.TFLINT_VERSION }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -86,18 +86,20 @@ jobs:
       - name: Initialize TFLint Plugins
         run: tflint --init --config .tflint.hcl
 
-      # Setup Trivy using Aqua Security GitHub plugin
+      # Setup Trivy using Aqua Security GitHub plugin (v0.3.1)
       - name: Setup Trivy
-        uses: aquasecurity/setup-trivy@v0.2.2
+        uses: aquasecurity/setup-trivy@v0.3.1
         with:
           version: ${{ env.TRIVY_VERSION }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      # Setup terraform-docs using dedicated GitHub plugin
+      # Install terraform-docs binary into PATH using official GitHub release installer (v3)
       - name: Setup terraform-docs
-        uses: bodgit/setup-terraform-docs@v1
+        uses: jaxxstorm/action-install-gh-release@v3.0.0
         with:
-          terraform-docs-version: ${{ env.TERRAFORM_DOCS_VERSION }}
+          repo: terraform-docs/terraform-docs
+          tag: ${{ env.TERRAFORM_DOCS_VERSION }}
+          cache: enable
 
       # Install Python virtualenv dependencies (checkov & pre-commit from pyproject.toml)
       - name: Install dependencies with uv
@@ -105,13 +107,12 @@ jobs:
           uv sync --frozen
           echo "$PWD/.venv/bin" >> $GITHUB_PATH
 
-      # Run Pre-commit hooks using the official pre-commit GitHub plugin
+      # Run Pre-commit hooks using official pre-commit GitHub plugin (v3)
       - name: Run Pre-commit Hooks
         uses: pre-commit/action@v3.0.1
         with:
           extra_args: --all-files
         env:
-          # Ensure subtools find git and config properly
           SKIP: ''
 
   # ============================================================================
@@ -127,18 +128,18 @@ jobs:
         working-directory: ${{ env.TF_WORKING_DIR }}
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
-      # Setup Terraform using official HashiCorp GitHub plugin
+      # Setup Terraform using official HashiCorp GitHub plugin (v4)
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
+        uses: hashicorp/setup-terraform@v4
         with:
           terraform_version: ${{ env.TF_VERSION }}
           terraform_wrapper: false
 
-      # Configure AWS credentials environment variables
+      # Configure AWS credentials environment variables (v6)
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -155,9 +156,9 @@ jobs:
             aws configure set aws_session_token "${{ secrets.AWS_SESSION_TOKEN }}" --profile "${{ env.AWS_PROFILE }}"
           fi
 
-      # Cache Terraform plugins and providers (.terraform directory)
+      # Cache Terraform plugins and providers (.terraform directory) (v6)
       - name: Cache Terraform Providers
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ${{ env.TF_WORKING_DIR }}/.terraform
           key: terraform-${{ runner.os }}-${{ hashFiles(format('{0}/.terraform.lock.hcl', env.TF_WORKING_DIR)) }}
@@ -179,9 +180,9 @@ jobs:
           terraform plan -input=false -no-color -out=tfplan
           terraform show -no-color tfplan > tfplan.txt
 
-      # Upload and cache the binary plan file and text summary as workflow artifacts
+      # Upload and cache the binary plan file and text summary as workflow artifacts (v7)
       - name: Cache & Save Terraform Plan Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: dev-tfplan
           path: |
@@ -216,18 +217,18 @@ jobs:
         working-directory: ${{ env.TF_WORKING_DIR }}
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
-      # Setup Terraform using official HashiCorp GitHub plugin
+      # Setup Terraform using official HashiCorp GitHub plugin (v4)
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
+        uses: hashicorp/setup-terraform@v4
         with:
           terraform_version: ${{ env.TF_VERSION }}
           terraform_wrapper: false
 
-      # Configure AWS credentials environment variables
+      # Configure AWS credentials environment variables (v6)
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -244,9 +245,9 @@ jobs:
             aws configure set aws_session_token "${{ secrets.AWS_SESSION_TOKEN }}" --profile "${{ env.AWS_PROFILE }}"
           fi
 
-      # Restore cached Terraform plugins (.terraform directory)
+      # Restore cached Terraform plugins (.terraform directory) (v6)
       - name: Restore Terraform Providers Cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ${{ env.TF_WORKING_DIR }}/.terraform
           key: terraform-${{ runner.os }}-${{ hashFiles(format('{0}/.terraform.lock.hcl', env.TF_WORKING_DIR)) }}
@@ -254,9 +255,9 @@ jobs:
       - name: Terraform Init
         run: terraform init
 
-      # Download the cached plan file generated in Step 2
+      # Download the cached plan file generated in Step 2 (v8)
       - name: Download Cached Terraform Plan
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: dev-tfplan
           path: ${{ env.TF_WORKING_DIR }}
