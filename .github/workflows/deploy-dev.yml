@@ -41,7 +41,6 @@ env:
   TFLINT_VERSION: 'latest'
   TRIVY_VERSION: 'latest'
   AWS_REGION: ${{ secrets.AWS_REGION || 'eu-central-1' }}
-  AWS_PROFILE: 'production-admin'
   TF_WORKING_DIR: 'environments/dev'
   TF_VAR_aws_region: ${{ secrets.AWS_REGION || 'eu-central-1' }}
   TF_VAR_aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
@@ -127,8 +126,6 @@ jobs:
       # Configure AWS credentials environment variables
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v6
-        env:
-          AWS_PROFILE: ""
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -164,6 +161,8 @@ jobs:
 
       - name: Terraform Plan
         id: plan
+        env:
+          AWS_PROFILE: 'production-admin'
         run: |
           terraform plan -input=false -no-color -out=tfplan
           terraform show -no-color tfplan > tfplan.txt
@@ -220,7 +219,6 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
           aws-region: ${{ env.AWS_REGION }}
 
       # Set up named AWS CLI profile required by backend.tf and providers.tf
@@ -251,4 +249,6 @@ jobs:
           path: ${{ env.TF_WORKING_DIR }}
 
       - name: Terraform Apply
+        env:
+          AWS_PROFILE: 'production-admin'
         run: terraform apply -input=false -no-color tfplan
