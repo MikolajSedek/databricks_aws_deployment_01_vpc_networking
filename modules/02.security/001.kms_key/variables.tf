@@ -1,4 +1,3 @@
-
 variable "kms_key_description" {
   description = "Custom KMS key description"
   type        = string
@@ -11,9 +10,14 @@ variable "enable_key_rotation" {
 }
 
 variable "deletion_window_in_days" {
-  description = "Number of days for key deletion"
+  description = "Number of days for key deletion (must be between 7 and 30 days)"
   type        = number
   default     = 30
+
+  validation {
+    condition     = var.deletion_window_in_days >= 7 && var.deletion_window_in_days <= 30
+    error_message = "The KMS key deletion window must be between 7 and 30 days."
+  }
 }
 
 variable "kms_key_alias" {

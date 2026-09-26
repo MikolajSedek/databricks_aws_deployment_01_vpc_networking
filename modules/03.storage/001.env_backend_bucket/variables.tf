@@ -1,6 +1,11 @@
 variable "bucket_name" {
   description = "Base name of the S3 bucket for Terraform backend storage"
   type        = string
+
+  validation {
+    condition     = can(regex("^[a-z0-9.-]+$", var.bucket_name))
+    error_message = "The bucket_name must consist only of lowercase letters, numbers, hyphens, and periods."
+  }
 }
 
 variable "environment" {
@@ -11,6 +16,11 @@ variable "environment" {
 variable "kms_key_arn" {
   description = "ARN of the KMS key used for S3 server-side encryption"
   type        = string
+
+  validation {
+    condition     = startswith(var.kms_key_arn, "arn:aws") && can(regex(":kms:", var.kms_key_arn))
+    error_message = "The KMS key ARN must be a valid AWS KMS ARN (starting with arn:aws and containing :kms:)."
+  }
 }
 
 variable "force_destroy" {

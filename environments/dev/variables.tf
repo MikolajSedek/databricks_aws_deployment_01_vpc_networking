@@ -13,6 +13,11 @@ variable "aws_region" {
   description = "The AWS region where resources will be deployed."
   type        = string
   default     = "eu-central-1"
+
+  validation {
+    condition     = can(regex("^[a-z]{2}(-[a-z]+)+-\\d$", var.aws_region))
+    error_message = "The AWS region must be a valid region format (e.g. eu-central-1, us-east-1)."
+  }
 }
 
 variable "aws_account_id" {
@@ -29,6 +34,11 @@ variable "environment" {
   description = "Deployment environment name (e.g. dev, staging, prod)."
   type        = string
   default     = "dev"
+
+  validation {
+    condition     = contains(["dev", "staging", "prod", "test"], var.environment)
+    error_message = "Environment must be one of: dev, staging, prod, test."
+  }
 }
 
 variable "profile" {

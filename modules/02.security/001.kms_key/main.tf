@@ -16,9 +16,13 @@ resource "aws_kms_key" "this" {
   description             = var.kms_key_description
   enable_key_rotation     = var.enable_key_rotation
   deletion_window_in_days = var.deletion_window_in_days
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
-resource "aws_kms_key_policy" "example" {
+resource "aws_kms_key_policy" "this" {
   key_id = aws_kms_key.this.id
   policy = jsonencode({
     Version = "2012-10-17"
@@ -44,9 +48,17 @@ resource "aws_kms_key_policy" "example" {
       }
     ]
   })
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 resource "aws_kms_alias" "this" {
   target_key_id = aws_kms_key.this.id
   name          = "alias/${local.kms_key_alias_with_env}"
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }

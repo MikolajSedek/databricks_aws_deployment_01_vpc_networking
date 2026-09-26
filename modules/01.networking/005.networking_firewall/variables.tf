@@ -1,16 +1,31 @@
 variable "spoke_cidr_block" {
   description = "CIDR block for Spoke VPC"
   type        = string
+
+  validation {
+    condition     = can(cidrhost(var.spoke_cidr_block, 0))
+    error_message = "The spoke_cidr_block must be a valid IPv4 CIDR block."
+  }
 }
 
 variable "hub_cidr_block" {
   description = "CIDR block for Hub VPC"
   type        = string
+
+  validation {
+    condition     = can(cidrhost(var.hub_cidr_block, 0))
+    error_message = "The hub_cidr_block must be a valid IPv4 CIDR block."
+  }
 }
 
 variable "hub_vpc_id" {
   description = "HUB vpc ID"
   type        = string
+
+  validation {
+    condition     = startswith(var.hub_vpc_id, "vpc-")
+    error_message = "The hub_vpc_id must start with 'vpc-'."
+  }
 }
 
 variable "hub_firewall_subnet_ids" {
@@ -31,6 +46,11 @@ variable "hub_igw_rt_id" {
 variable "hub_nat_public_subnets_cidr" {
   description = "Hub VPC PUBLIC subnets CIDRs"
   type        = list(string)
+
+  validation {
+    condition     = alltrue([for cidr in var.hub_nat_public_subnets_cidr : can(cidrhost(cidr, 0))])
+    error_message = "All entries in hub_nat_public_subnets_cidr must be valid IPv4 CIDR blocks."
+  }
 }
 
 variable "db_resources_map" {

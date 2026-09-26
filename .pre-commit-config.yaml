@@ -56,4 +56,4 @@ repos:
           - --args=--hard-fail-on=CRITICAL
       - id: terraform_docs
         args:
-          - --hook-config=--path-to-file=README.md;--add-to-existing-file=true;--create-file-if-not-exist=true
+          - --hook-config=--path-to-file=TERRAFORM.md;--add-to-existing-file=true;--create-file-if-not-exist=true

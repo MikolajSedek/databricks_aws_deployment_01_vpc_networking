@@ -9,6 +9,11 @@
 variable "cidr_block" {
   description = "VPC CIDR block"
   type        = string
+
+  validation {
+    condition     = can(cidrhost(var.cidr_block, 0))
+    error_message = "The cidr_block must be a valid IPv4 CIDR block (e.g. 10.0.0.0/16)."
+  }
 }
 
 variable "tags" {

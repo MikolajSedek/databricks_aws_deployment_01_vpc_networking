@@ -1,6 +1,11 @@
 variable "hub_vpc_id" {
   description = "HUB vpc ID"
   type        = string
+
+  validation {
+    condition     = startswith(var.hub_vpc_id, "vpc-")
+    error_message = "The hub_vpc_id must start with 'vpc-'."
+  }
 }
 
 variable "hub_tgw_subnet_ids" {
@@ -21,6 +26,11 @@ variable "hub_nat_public_rt_id" {
 variable "spoke_vpc_id" {
   description = "SPOKE vpc ID"
   type        = string
+
+  validation {
+    condition     = startswith(var.spoke_vpc_id, "vpc-")
+    error_message = "The spoke_vpc_id must start with 'vpc-'."
+  }
 }
 
 variable "spoke_tgw_subnet_ids" {
@@ -31,6 +41,11 @@ variable "spoke_tgw_subnet_ids" {
 variable "spoke_cidr_block" {
   description = "CIDR block for Spoke VPC"
   type        = string
+
+  validation {
+    condition     = can(cidrhost(var.spoke_cidr_block, 0))
+    error_message = "The spoke_cidr_block must be a valid IPv4 CIDR block."
+  }
 }
 
 variable "spoke_db_private_rt_id" {
