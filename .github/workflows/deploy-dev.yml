@@ -252,6 +252,7 @@ jobs:
           role_arn = ${{ secrets.AWS_PROFILE_ROLE_ARN }}
           source_profile = default
           EOF
+          
 
       # Restore cached Terraform plugins (.terraform directory)
       - name: Restore Terraform Providers Cache
