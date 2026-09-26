@@ -150,9 +150,9 @@ jobs:
           [default]
           region = eu-central-1
           output = json
+          
           [profile ${{ env.AWS_PROFILE }}]
           role_arn = ${{ secrets.AWS_PROFILE_ROLE_ARN }}
-          source_profile = default
           EOF
 
       # Cache Terraform plugins and providers (.terraform directory)
