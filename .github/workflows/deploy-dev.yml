@@ -41,21 +41,26 @@ env:
   TFLINT_VERSION: 'latest'
   TRIVY_VERSION: 'latest'
   AWS_REGION: ${{ secrets.AWS_REGION || 'eu-central-1' }}
+  AWS_PROFILE: 'production-admin'
+  AWS_SDK_LOAD_CONFIG: '1'
   TF_WORKING_DIR: 'environments/dev'
   TF_VAR_aws_region: ${{ secrets.AWS_REGION || 'eu-central-1' }}
   TF_VAR_aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
   TF_VAR_environment: 'dev'
   TF_VAR_profile: 'production-admin'
+  SKIP: 'terraform_docs'
 
 jobs:
   # ============================================================================
   # STEP 1: PRE-COMMIT CHECKS
   # Runs code formatting, linting (tflint), and security scanning (trivy, checkov, gitleaks).
-  # Uses uv to run pre-commit with its managed virtual environment.
+  # terraform_docs is skipped.
   # ============================================================================
 #  precommit:
 #    name: Pre-commit Quality & Security Checks
 #    runs-on: ubuntu-latest
+#    env:
+#      SKIP: 'terraform_docs,terraform-docs'
 #    steps:
 #      - name: Checkout Code
 #        uses: actions/checkout@v7
@@ -95,11 +100,13 @@ jobs:
 #      - name: Install dependencies with uv
 #        run: uv sync --frozen
 #
-#      # Run pre-commit via uv so it shares the venv with checkov and honors SKIP
-#      - name: Run Pre-commit Hooks
-#        run: uv run pre-commit run --all-files
+#      # Run pre-commit via uv with explicit SKIP for terraform-docs
+#      - name: Run Pre-commit Hooks (skip terraform-docs)
+#        run: |
+#          export SKIP=terraform_docs,terraform-docs
+#          uv run pre-commit run --all-files
 #        env:
-#          SKIP: terraform_docs
+#          SKIP: 'terraform_docs,terraform-docs'
 
   # ============================================================================
   # STEP 2: TERRAFORM VALIDATE & PLAN
@@ -123,23 +130,36 @@ jobs:
           terraform_version: ${{ env.TF_VERSION }}
           terraform_wrapper: false
 
-      # Configure AWS credentials environment variables
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v6
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
+#      # Configure AWS credentials and write shared profile via action
+#      - name: Configure AWS Credentials
+#        uses: aws-actions/configure-aws-credentials@v6
+#        with:
+#          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+#          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+#          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+#          aws-region: ${{ env.AWS_REGION }}
+#          aws-profile: ${{ env.AWS_PROFILE }}
+#          overwrite-aws-profile: true
+#          output-env-credentials: true
 
-      # Set up named AWS CLI profile required by backend.tf and providers.tf
-      - name: Setup Named AWS Profile
+      # Ensure shared config and credentials files match Go SDK expectations
+      - name: Ensure AWS Shared Profile Files
         run: |
-          aws configure set aws_access_key_id "${{ secrets.AWS_ACCESS_KEY_ID }}" --profile "${{ env.AWS_PROFILE }}"
-          aws configure set aws_secret_access_key "${{ secrets.AWS_SECRET_ACCESS_KEY }}" --profile "${{ env.AWS_PROFILE }}"
-          aws configure set region "${{ env.AWS_REGION }}" --profile "${{ env.AWS_PROFILE }}"
+          mkdir -p ~/.aws
+          cat << EOF > ~/.aws/credentials
+          [${{ env.AWS_PROFILE }}]
+          aws_access_key_id = ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_secret_access_key = ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          EOF
           if [ -n "${{ secrets.AWS_SESSION_TOKEN }}" ]; then
-            aws configure set aws_session_token "${{ secrets.AWS_SESSION_TOKEN }}" --profile "${{ env.AWS_PROFILE }}"
+            echo "aws_session_token = ${{ secrets.AWS_SESSION_TOKEN }}" >> ~/.aws/credentials
           fi
+
+          cat << EOF > ~/.aws/config
+          [profile ${{ env.AWS_PROFILE }}]
+          region = ${{ env.AWS_REGION }}
+          output = json
+          EOF
 
       # Cache Terraform plugins and providers (.terraform directory)
       - name: Cache Terraform Providers
@@ -154,19 +174,13 @@ jobs:
         run: terraform fmt -check -recursive
 
       - name: Terraform Init
-        env:
-          AWS_PROFILE: 'production-admin'
         run: terraform init
 
       - name: Terraform Validate
-        env:
-          AWS_PROFILE: 'production-admin'
         run: terraform validate -no-color
 
       - name: Terraform Plan
         id: plan
-        env:
-          AWS_PROFILE: 'production-admin'
         run: |
           terraform plan -input=false -no-color -out=tfplan
           terraform show -no-color tfplan > tfplan.txt
@@ -217,23 +231,40 @@ jobs:
           terraform_version: ${{ env.TF_VERSION }}
           terraform_wrapper: false
 
-      # Configure AWS credentials environment variables
+      # Configure AWS credentials and write shared profile via action
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v6
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
           aws-region: ${{ env.AWS_REGION }}
+          aws-profile: ${{ env.AWS_PROFILE }}
+          overwrite-aws-profile: true
+          output-env-credentials: true
 
-      # Set up named AWS CLI profile required by backend.tf and providers.tf
-      - name: Setup Named AWS Profile
+      # Ensure shared config and credentials files match Go SDK expectations
+      - name: Ensure AWS Shared Profile Files
         run: |
-          aws configure set aws_access_key_id "${{ secrets.AWS_ACCESS_KEY_ID }}" --profile "${{ env.AWS_PROFILE }}"
-          aws configure set aws_secret_access_key "${{ secrets.AWS_SECRET_ACCESS_KEY }}" --profile "${{ env.AWS_PROFILE }}"
-          aws configure set region "${{ env.AWS_REGION }}" --profile "${{ env.AWS_PROFILE }}"
+          mkdir -p ~/.aws
+          cat << EOF > ~/.aws/credentials
+          [${{ env.AWS_PROFILE }}]
+          aws_access_key_id = ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_secret_access_key = ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          EOF
           if [ -n "${{ secrets.AWS_SESSION_TOKEN }}" ]; then
-            aws configure set aws_session_token "${{ secrets.AWS_SESSION_TOKEN }}" --profile "${{ env.AWS_PROFILE }}"
+            echo "aws_session_token = ${{ secrets.AWS_SESSION_TOKEN }}" >> ~/.aws/credentials
           fi
+
+          cat << EOF > ~/.aws/config
+          [profile ${{ env.AWS_PROFILE }}]
+          region = ${{ env.AWS_REGION }}
+          output = json
+
+          [${{ env.AWS_PROFILE }}]
+          region = ${{ env.AWS_REGION }}
+          output = json
+          EOF
 
       # Restore cached Terraform plugins (.terraform directory)
       - name: Restore Terraform Providers Cache
@@ -253,6 +284,4 @@ jobs:
           path: ${{ env.TF_WORKING_DIR }}
 
       - name: Terraform Apply
-        env:
-          AWS_PROFILE: 'production-admin'
         run: terraform apply -input=false -no-color tfplan
