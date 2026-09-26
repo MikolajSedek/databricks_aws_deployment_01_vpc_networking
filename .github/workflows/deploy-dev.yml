@@ -130,17 +130,17 @@ jobs:
           terraform_version: ${{ env.TF_VERSION }}
           terraform_wrapper: false
 
-#      # Configure AWS credentials and write shared profile via action
-#      - name: Configure AWS Credentials
-#        uses: aws-actions/configure-aws-credentials@v6
-#        with:
-#          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-#          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-#          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
-#          aws-region: ${{ env.AWS_REGION }}
-#          aws-profile: ${{ env.AWS_PROFILE }}
-#          overwrite-aws-profile: true
-#          output-env-credentials: true
+      # Configure AWS credentials and write shared profile via action
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}
+          aws-profile: ${{ env.AWS_PROFILE }}
+          overwrite-aws-profile: true
+          output-env-credentials: true
 
       # Ensure shared config and credentials files match Go SDK expectations
       - name: Ensure AWS Shared Profile Files
