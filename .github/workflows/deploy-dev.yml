@@ -52,14 +52,11 @@ jobs:
   # ============================================================================
   # STEP 1: PRE-COMMIT CHECKS
   # Runs code formatting, linting (tflint), and security scanning (trivy, checkov, gitleaks).
-  # terraform_docs is excluded via SKIP in CI.
+  # Uses uv to run pre-commit with its managed virtual environment.
   # ============================================================================
   precommit:
     name: Pre-commit Quality & Security Checks
     runs-on: ubuntu-latest
-    env:
-      # Exclude terraform-docs from automated CI pre-commit runs at the job level
-      SKIP: terraform_docs
     steps:
       - name: Checkout Code
         uses: actions/checkout@v7
@@ -95,19 +92,15 @@ jobs:
           version: ${{ env.TRIVY_VERSION }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      # Install Python virtualenv dependencies (checkov & pre-commit from pyproject.toml)
-      # Export SKIP to $GITHUB_ENV to guarantee composite action steps inherit it
+      # Install project dependencies (pre-commit, checkov) via uv
       - name: Install dependencies with uv
-        run: |
-          uv sync --frozen
-          echo "$PWD/.venv/bin" >> $GITHUB_PATH
-          echo "SKIP=terraform_docs" >> $GITHUB_ENV
+        run: uv sync --frozen
 
-      # Run Pre-commit hooks using official pre-commit GitHub plugin
+      # Run pre-commit via uv so it shares the venv with checkov and honors SKIP
       - name: Run Pre-commit Hooks
-        uses: pre-commit/action@v3.0.1
-        with:
-          extra_args: --all-files
+        run: uv run pre-commit run --all-files
+        env:
+          SKIP: terraform_docs
 
   # ============================================================================
   # STEP 2: TERRAFORM VALIDATE & PLAN
