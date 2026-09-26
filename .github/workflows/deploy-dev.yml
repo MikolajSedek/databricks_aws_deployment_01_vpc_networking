@@ -258,6 +258,8 @@ jobs:
 
           cat << EOF > ~/.aws/config
           [profile ${{ env.AWS_PROFILE }}]
+          role_arn = ${{ secrets.AWS_PROFILE_ROLE_ARN }}
+          source_profile = default
           region = ${{ env.AWS_REGION }}
           output = json
           EOF
