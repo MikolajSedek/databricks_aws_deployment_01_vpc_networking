@@ -275,6 +275,9 @@ jobs:
 
       - name: Terraform Init
         run: terraform init
+        env:
+          AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
       # Download the cached plan file generated in Step 2
       - name: Download Cached Terraform Plan
