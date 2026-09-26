@@ -146,19 +146,10 @@ jobs:
       - name: Ensure AWS Shared Profile Files
         run: |
           mkdir -p ~/.aws
-          cat << EOF > ~/.aws/credentials
-          [${{ env.AWS_PROFILE }}]
-          aws_access_key_id = ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws_secret_access_key = ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          EOF
-          if [ -n "${{ secrets.AWS_SESSION_TOKEN }}" ]; then
-            echo "aws_session_token = ${{ secrets.AWS_SESSION_TOKEN }}" >> ~/.aws/credentials
-          fi
-
           cat << EOF > ~/.aws/config
           [profile ${{ env.AWS_PROFILE }}]
-          region = ${{ env.AWS_REGION }}
-          output = json
+          role_arn = ${{ secrets.AWS_PROFILE_ROLE_ARN }}
+          source_profile = default
           EOF
 
       # Cache Terraform plugins and providers (.terraform directory)
