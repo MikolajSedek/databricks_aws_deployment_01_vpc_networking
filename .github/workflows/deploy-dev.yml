@@ -154,9 +154,13 @@ jobs:
         run: terraform fmt -check -recursive
 
       - name: Terraform Init
+        env:
+          AWS_PROFILE: 'production-admin'
         run: terraform init
 
       - name: Terraform Validate
+        env:
+          AWS_PROFILE: 'production-admin'
         run: terraform validate -no-color
 
       - name: Terraform Plan
