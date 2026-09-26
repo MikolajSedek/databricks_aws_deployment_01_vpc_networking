@@ -84,7 +84,7 @@ module "hub_vpc_network_firewall" {
   db_resources_map            = local.db_resources_map
   env                         = local.env
   hub_cidr_block              = local.hub_cidr_block
-  hub_firewall_subnet_ids     = local.hub_firewall_subnets_cidr
+  hub_firewall_subnet_ids     = module.hub_vpc.hub_firewall_subnet_ids
   hub_igw_rt_id               = module.hub_vpc.hub_igw_rt_id
   hub_nat_public_rt_id        = module.hub_vpc.hub_nat_public_rt_id
   hub_nat_public_subnets_cidr = local.hub_nat_public_subnets_cidr

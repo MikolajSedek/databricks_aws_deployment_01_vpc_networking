@@ -1,0 +1,7 @@
+# Trivy ignore configuration
+# AVD-AWS-0104 / aws-ec2-no-public-egress-sgr:
+# Databricks compute nodes in the Spoke VPC route outbound TCP traffic on ports 443, 3306, 6666 to the Transit Gateway,
+# where traffic is strictly inspected and filtered by AWS Network Firewall in the Hub VPC.
+AVD-AWS-0104
+aws-ec2-no-public-egress-sgr
+AVD-AWS-0164
