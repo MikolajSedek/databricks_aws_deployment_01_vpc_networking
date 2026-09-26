@@ -260,10 +260,6 @@ jobs:
           [profile ${{ env.AWS_PROFILE }}]
           region = ${{ env.AWS_REGION }}
           output = json
-
-          [${{ env.AWS_PROFILE }}]
-          region = ${{ env.AWS_REGION }}
-          output = json
           EOF
 
       # Restore cached Terraform plugins (.terraform directory)
@@ -275,10 +271,7 @@ jobs:
 
       - name: Terraform Init
         run: terraform init
-        env:
-          AWS_ACCESS_KEY_ID : '${{ secrets.AWS_ACCESS_KEY_ID }}'
-          AWS_SECRET_ACCESS_KEY : '${{ secrets.AWS_SECRET_ACCESS_KEY }}'
-          AWS_PROFILE: 'production-admin'
+
 
       # Download the cached plan file generated in Step 2
       - name: Download Cached Terraform Plan
