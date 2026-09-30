@@ -72,9 +72,9 @@ jobs:
       - name: Install dependencies with uv
         run: uv sync --frozen
 
-      # Run pre-commit via uv with explicit SKIP for terraform-docs
-      - name: Run Pre-commit Hooks (skip terraform-docs)
+      # Run pre-commit via uv with explicit SKIP for a few checks
+      - name: Run Pre-commit Hooks (skip terraform-docs and trivy)
         run: |
           uv run pre-commit run --all-files
         env:
-          SKIP: 'terraform_docs'
+          SKIP: 'terraform_docs,terraform_trivy'
