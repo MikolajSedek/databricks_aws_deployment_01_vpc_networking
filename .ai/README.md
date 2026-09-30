@@ -173,7 +173,7 @@ node C:\Users\msede\.gemini\antigravity-acp\brain\025d2dc6-4068-4702-913e-63bb88
 
 ```bash
 # Generate TERRAFORM.md for all modules and environments
-terraform-docs markdown table --output-file TERRAFORM.md ./modules/01.networking/001.vpc
+terraform-docs markdown table --output-file TERRAFORM.md ./modules/01.networking/001.generic_vpc
 terraform-docs markdown table --output-file TERRAFORM.md ./environments/dev
 ```
 

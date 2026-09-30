@@ -11,7 +11,7 @@ on:
       - '.pre-commit-config.yaml'
       - '.tflint.hcl'
       - '.trivyignore'
-      - 'deploy-dev.yml'
+      - '.github/workflows/**'
   pull_request:
     branches:
       - main
@@ -22,7 +22,7 @@ on:
       - '.pre-commit-config.yaml'
       - '.tflint.hcl'
       - '.trivyignore'
-      - 'deploy-dev.yml'
+      - '.github/workflows/**'
   workflow_dispatch:
     inputs:
       auto_apply:
@@ -36,20 +36,6 @@ permissions:
   id-token: write
   pull-requests: write
 
-env:
-  TF_VERSION: '1.16.3'
-  TFLINT_VERSION: 'latest'
-  TRIVY_VERSION: 'latest'
-  AWS_REGION: ${{ secrets.AWS_REGION || 'eu-central-1' }}
-  AWS_PROFILE: 'production-admin'
-  AWS_SDK_LOAD_CONFIG: '1'
-  TF_WORKING_DIR: 'environments/dev'
-  TF_VAR_aws_region: ${{ secrets.AWS_REGION || 'eu-central-1' }}
-  TF_VAR_aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
-  TF_VAR_environment: 'dev'
-  TF_VAR_profile: 'production-admin'
-  SKIP: 'terraform_docs'
-
 jobs:
   # ============================================================================
   # STEP 1: PRE-COMMIT CHECKS
@@ -58,55 +44,8 @@ jobs:
   # ============================================================================
   precommit:
     name: Pre-commit Quality & Security Checks
-    runs-on: ubuntu-latest
-    env:
-      SKIP: 'terraform_docs,terraform-docs'
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v7
-
-      # Setup uv using official Astral GitHub plugin
-      - name: Setup uv
-        uses: astral-sh/setup-uv@v9.0.0
-        with:
-          enable-cache: true
-          cache-dependency-glob: 'uv.lock'
-
-      # Setup Terraform using official HashiCorp GitHub plugin
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v4
-        with:
-          terraform_version: ${{ env.TF_VERSION }}
-          terraform_wrapper: false
-
-      # Setup TFLint using official GitHub plugin
-      - name: Setup TFLint
-        uses: terraform-linters/setup-tflint@v6
-        with:
-          tflint_version: ${{ env.TFLINT_VERSION }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Initialize TFLint Plugins
-        run: tflint --init --config .tflint.hcl
-
-      # Setup Trivy using Aqua Security GitHub plugin
-      - name: Setup Trivy
-        uses: aquasecurity/setup-trivy@v0.3.1
-        with:
-          version: ${{ env.TRIVY_VERSION }}
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      # Install project dependencies (pre-commit, checkov) via uv
-      - name: Install dependencies with uv
-        run: uv sync --frozen
-
-      # Run pre-commit via uv with explicit SKIP for terraform-docs
-      - name: Run Pre-commit Hooks (skip terraform-docs)
-        run: |
-          export SKIP=terraform_docs,terraform-docs
-          uv run pre-commit run --all-files
-        env:
-          SKIP: 'terraform_docs,terraform-docs'
+    uses: ./.github/workflows/01_precommit.yml
+    secrets: inherit
 
   # ============================================================================
   # STEP 2: TERRAFORM VALIDATE & PLAN
@@ -114,88 +53,13 @@ jobs:
   # ============================================================================
   plan:
     name: Terraform Validate & Plan
-    runs-on: ubuntu-latest
     needs: [precommit]
-    defaults:
-      run:
-        working-directory: ${{ env.TF_WORKING_DIR }}
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v7
-
-      # Setup Terraform using official HashiCorp GitHub plugin
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v4
-        with:
-          terraform_version: ${{ env.TF_VERSION }}
-          terraform_wrapper: false
-
-      # Configure AWS credentials and write shared profile via action
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v6
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
-          aws-region: ${{ env.AWS_REGION }}
-          aws-profile: ${{ env.AWS_PROFILE }}
-          overwrite-aws-profile: true
-
-      # Ensure shared config and credentials files match Go SDK expectations
-      - name: Ensure AWS Shared Profile Files
-        run: |
-          mkdir -p ~/.aws
-          cat << EOF > ~/.aws/config
-          [default]
-          region = eu-central-1
-          output = json
-
-          [profile ${{ env.AWS_PROFILE }}]
-          role_arn = ${{ secrets.AWS_PROFILE_ROLE_ARN }}
-          EOF
-
-      # Cache Terraform plugins and providers (.terraform directory)
-      - name: Cache Terraform Providers
-        uses: actions/cache@v6
-        with:
-          path: ${{ env.TF_WORKING_DIR }}/.terraform
-          key: terraform-${{ runner.os }}-${{ hashFiles(format('{0}/.terraform.lock.hcl', env.TF_WORKING_DIR)) }}
-          restore-keys: |
-            terraform-${{ runner.os }}-
-
-      - name: Terraform Format Check
-        run: terraform fmt -check -recursive
-
-      - name: Terraform Init
-        run: terraform init
-
-      - name: Terraform Validate
-        run: terraform validate -no-color
-
-      - name: Terraform Plan
-        id: plan
-        run: |
-          terraform plan -input=false -no-color -out=tfplan
-          terraform show -no-color tfplan > tfplan.txt
-
-      # Upload and cache the binary plan file and text summary as workflow artifacts
-      - name: Cache & Save Terraform Plan Artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: dev-tfplan
-          path: |
-            ${{ env.TF_WORKING_DIR }}/tfplan
-            ${{ env.TF_WORKING_DIR }}/tfplan.txt
-            ${{ env.TF_WORKING_DIR }}/.terraform.lock.hcl
-          retention-days: 5
-
-      # Attach plan summary to PR if running on pull request
-      - name: Add Plan Summary to Job Summary
-        run: |
-          echo "### Terraform Plan Summary (\`dev\`)" >> $GITHUB_STEP_SUMMARY
-          echo '```terraform' >> $GITHUB_STEP_SUMMARY
-          cat tfplan.txt | tail -n 50 >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
+    uses: ./.github/workflows/02_plan.yml
+    secrets: inherit
+    with:
+      working_directory: 'environments/dev'
+      environment: 'dev'
+      plan_artifact_name: 'dev-tfplan'
 
   # ============================================================================
   # STEP 3: TERRAFORM APPLY
@@ -203,69 +67,12 @@ jobs:
   # ============================================================================
   apply:
     name: Terraform Apply
-    runs-on: ubuntu-latest
     needs: [plan]
     # Restrict automatic apply to push on default branch or explicit workflow_dispatch
     if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
-    # GitHub Environment: Configure "Required reviewers" in GitHub Repo Settings -> Environments -> dev
-    # This pauses the workflow and requires an extra user action (click "Review deployments" -> Approve) in GitHub UI.
-    environment: dev
-    defaults:
-      run:
-        working-directory: ${{ env.TF_WORKING_DIR }}
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v7
-
-      # Setup Terraform using official HashiCorp GitHub plugin
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v4
-        with:
-          terraform_version: ${{ env.TF_VERSION }}
-          terraform_wrapper: false
-
-      # Configure AWS credentials and write shared profile via action
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v6
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
-          aws-region: ${{ env.AWS_REGION }}
-          aws-profile: ${{ env.AWS_PROFILE }}
-          overwrite-aws-profile: true
-
-      # Ensure shared config and credentials files match Go SDK expectations
-      - name: Ensure AWS Shared Profile Files
-        run: |
-          mkdir -p ~/.aws
-          cat << EOF > ~/.aws/config
-          [default]
-          region = eu-central-1
-          output = json
-
-          [profile ${{ env.AWS_PROFILE }}]
-          role_arn = ${{ secrets.AWS_PROFILE_ROLE_ARN }}
-          EOF
-
-
-      # Restore cached Terraform plugins (.terraform directory)
-      - name: Restore Terraform Providers Cache
-        uses: actions/cache@v6
-        with:
-          path: ${{ env.TF_WORKING_DIR }}/.terraform
-          key: terraform-${{ runner.os }}-${{ hashFiles(format('{0}/.terraform.lock.hcl', env.TF_WORKING_DIR)) }}
-
-      - name: Terraform Init
-        run: terraform init
-
-
-      # Download the cached plan file generated in Step 2
-      - name: Download Cached Terraform Plan
-        uses: actions/download-artifact@v8
-        with:
-          name: dev-tfplan
-          path: ${{ env.TF_WORKING_DIR }}
-
-      - name: Terraform Apply
-        run: terraform apply -input=false -no-color tfplan
+    uses: ./.github/workflows/03_apply.yml
+    secrets: inherit
+    with:
+      working_directory: 'environments/dev'
+      environment: 'dev'
+      plan_artifact_name: 'dev-tfplan'

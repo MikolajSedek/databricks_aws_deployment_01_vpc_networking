@@ -65,7 +65,7 @@ module "hub_vpc" {
 // DEPENDS ON: Spoke and Hub VPCs
 
 module "spoke_hub_transit_gateway" {
-  source                 = "../../modules/01.networking/004.spoke_hub_tgw"
+  source                 = "../../modules/01.networking/004.transit_gateway_spoke_hub"
   env                    = local.env
   hub_nat_public_rt_id   = module.hub_vpc.hub_nat_public_rt_id
   hub_tgw_private_rt_id  = module.hub_vpc.hub_tgw_private_rt_id
@@ -80,7 +80,7 @@ module "spoke_hub_transit_gateway" {
 
 // Hub Networking Anti-Exfiltration Firewall deployment
 module "hub_vpc_network_firewall" {
-  source                      = "../../modules/01.networking/005.networking_firewall"
+  source                      = "../../modules/01.networking/005.hub_networking_firewall"
   db_resources_map            = local.db_resources_map
   env                         = local.env
   hub_cidr_block              = local.hub_cidr_block

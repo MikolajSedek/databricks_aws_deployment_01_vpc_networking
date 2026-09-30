@@ -80,3 +80,21 @@ resource "aws_s3_bucket_ownership_controls" "this" {
     prevent_destroy = true
   }
 }
+
+resource "aws_s3_bucket_lifecycle_configuration" "this" {
+  bucket = aws_s3_bucket.this.id
+
+  rule {
+    id     = "cleanup-old-state-versions"
+    status = "Enabled"
+
+    # This targets only the older, historical versions
+    noncurrent_version_expiration {
+      noncurrent_days = 90
+    }
+  }
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}

@@ -13,18 +13,24 @@
     - Security group port rules and egress firewall URL allowlists.
 */
 
+data "aws_availability_zones" "available_azs" {
+  state = "available"
+}
+
 locals {
   /* basic setup */
 
+  owner           = "msedek" // NOTE: change it to your name
   env             = "dev"
-  project_name    = "msedek-aws-dbx-dep"
+  project_name    = "${local.owner}-aws-dbx-dep"
   subproject_name = "vpc-net"
 
   backend_bucket_name = "${local.project_name}-${local.subproject_name}-s3-backend"
 
   /* NOTE: following information is regional based - adjust it properly to your AWS setup */
-  region = "eu-central-1"
+  /* This is a setup for region = "eu-central-1"
 
+  /* Databricks Regional resources map */
   db_resources_map = {
     web_app       = "frankfurt.cloud.databricks.com"
     tunnel        = "tunnel.eu-central-1.cloud.databricks.com"
@@ -46,19 +52,20 @@ locals {
   sg_egress_ports                = [443, 3306, 6666]
   sg_ingress_protocols           = ["tcp", "udp"]
   sg_egress_protocols            = ["tcp", "udp"]
-  az_postfixes                   = ["a", "b", "c"]
-  availability_zones             = [for az in local.az_postfixes : "${local.region}${az}"]
+  availability_zones             = data.aws_availability_zones.available_azs.names
+
+  // Resources Groups Tags
 
   spoke_vpc_tags = {
-    VpcDomain = "Spoke VPC for ${local.env} environment"
+    ResourceGroup = "Spoke VPC for ${local.env} environment"
   }
 
   hub_vpc_tags = {
-    VpcDomain = "Hub VPC for ${local.env} environment"
+    ResourceGroup = "Hub VPC for ${local.env} environment"
   }
 
   tgw_tags = {
-    VpcDomain = "Spoke-Hub Transit Gateway"
+    ResourceGroup = "Spoke-Hub Transit Gateway"
   }
 
   /* FIREWALL setup */

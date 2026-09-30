@@ -13,7 +13,7 @@ plugin "aws" {
   version = "0.38.0"
   source  = "github.com/terraform-linters/tflint-ruleset-aws"
 }
-
+# this will be needed later
 rule "aws_vpc_endpoint_invalid_vpc_endpoint_type" {
   enabled = false
 }

@@ -38,6 +38,11 @@ variable "hub_firewall_subnets_cidr" {
   }
 }
 
+variable "availability_zones" {
+  description = "LIST of AZs for Hub VPC networking"
+  type        = list(string)
+}
+
 variable "name_prefix" {
   description = "NAME prefix for Hub VPC"
   type        = string
@@ -47,11 +52,6 @@ variable "name_prefix" {
 variable "env" {
   description = "ENVIRONMENT name"
   type        = string
-}
-
-variable "availability_zones" {
-  description = "LIST of AZs for Hub VPC networking"
-  type        = list(string)
 }
 
 variable "tags" {

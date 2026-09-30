@@ -41,6 +41,10 @@ Always ground implementations in official, up-to-date documentation. Do not rely
   - [Terraform AWS Provider Registry Documentation](https://registry.terraform.io/providers/hashicorp/aws/latest/docs)
   - [Terraform Language Documentation](https://developer.hashicorp.com/terraform/docs)
 
+### D. GitHub Actions Official Documentation *(Authoritative Source for Deployments)*
+- **Web Documentation**:
+  - [GitHub Actions Documentation](https://docs.github.com/en/actions) *(Authoritative source of truth for GitHub Actions CI/CD workflows, pipeline syntax, runner configurations, deployment environments, OIDC authentication, and automation)*
+
 ---
 
 ## 3. MCP Server & Resource Usage Protocol
@@ -158,11 +162,11 @@ Mermaid CLI (`@mermaid-js/mermaid-cli`) parses markdown files, extracts fenced `
     '.ai/README.md',
     '.ai/README_TEMPLATE.md',
     'environments/dev/README.md',
-    'modules/01.networking/001.vpc/README.md',
+    'modules/01.networking/001.generic_vpc/README.md',
     'modules/01.networking/002.spoke_vpc/README.md',
     'modules/01.networking/003.hub_vpc/README.md',
-    'modules/01.networking/004.spoke_hub_tgw/README.md',
-    'modules/01.networking/005.networking_firewall/README.md',
+    'modules/01.networking/004.transit_gateway_spoke_hub/README.md',
+    'modules/01.networking/005.hub_networking_firewall/README.md',
     'modules/02.security/001.kms_key/README.md',
     'modules/03.storage/001.env_backend_bucket/README.md'
   ];
@@ -219,9 +223,9 @@ Mermaid CLI (`@mermaid-js/mermaid-cli`) parses markdown files, extracts fenced `
 3. **Prohibition of Raw HTML**:
    - Avoid raw HTML tags such as `<br/>`, `<b>`, or `<span>` inside node labels; use multiple spaced lines or distinct sub-nodes instead.
 4. **Valid Connector Syntax**:
-   - Standard solid arrow: `A --> B`
-   - Labeled solid arrow: `A -->|"Encrypted TLS (443)"| B`
-   - Labeled dotted reference: `A -.->|"KMS Key ARN"| B`
+  - Standard solid arrow: `A --> B`
+  - Labeled solid arrow: `A -->|"Encrypted TLS (443)"| B`
+  - Labeled dotted reference: `A -.->|"KMS Key ARN"| B`
 
 ---
 
@@ -236,6 +240,9 @@ Mermaid CLI (`@mermaid-js/mermaid-cli`) parses markdown files, extracts fenced `
   - Ensure all Databricks control plane and storage traffic routes through the firewall or VPC endpoints as dictated by the architecture guide.
 - **State Management**:
   - Terraform remote state is stored in versioned, KMS-encrypted S3 buckets with DynamoDB state locking (`LockID` attribute).
+- **CI/CD & GitHub Actions Deployments**:
+  - Ground all workflow configurations, action plugins, OIDC authentication, and deployment automation in the official [GitHub Actions Documentation](https://docs.github.com/en/actions).
+  - Retain all original pipeline jobs and steps (Pre-commit checks, Terraform Validate & Plan with plan caching, and Terraform Apply gated by Environment protection rules).
 - **Code Organization**:
   - Follow modular architecture in `modules/` with isolated environments in `environments/<env>/` .
   - Maintain consistent file structure (`main.tf`, `variables.tf`, `locals.tf`, `outputs.tf`, `README.md`, `TERRAFORM.md`).

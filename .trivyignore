@@ -1,7 +1,55 @@
-# Trivy ignore configuration
-# AVD-AWS-0104 / aws-ec2-no-public-egress-sgr:
-# Databricks compute nodes in the Spoke VPC route outbound TCP traffic on ports 443, 3306, 6666 to the Transit Gateway,
-# where traffic is strictly inspected and filtered by AWS Network Firewall in the Hub VPC.
+# ==============================================================================
+# Trivy Security Scanner Ignore List (.trivyignore)
+# Databricks Hub-and-Spoke AWS Networking Architecture
+# ==============================================================================
+# This file defines approved exceptions for Trivy security checks in this
+# repository, documenting the code ID, description, affected resources,
+# and architectural justification for each exemption.
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# Rule ID:     AVD-AWS-0104
+# Description: Security group rule allows unrestricted egress (0.0.0.0/0 or ::/0)
+# Severity:    CRITICAL
+# Target:      modules/01.networking/002.spoke_vpc/vpc_spoke_security_groups.tf
+#              Resource: aws_security_group.default_spoke_sg
+# ------------------------------------------------------------------------------
+# Justification:
+# 1. Functional Requirement: Databricks compute clusters in the Spoke VPC
+#    require outbound connectivity on specific TCP ports (443 HTTPS for API/control
+#    plane, 3306 for Hive Metastore, and 6666 for Secure Cluster Connectivity).
+# 2. AWS Security Group Limitation: Security groups operate at Layer 4 and
+#    only support IP/CIDR-based rules (not FQDN/domain names). External cloud
+#    services and Databricks control plane endpoints use dynamic IP addresses,
+#    necessitating destination 0.0.0.0/0 on those designated egress ports.
+# 3. Compensating Control: Direct internet access is disabled for compute
+#    subnets. All outbound traffic is routed through AWS Transit Gateway (TGW)
+#    into the centralized Hub VPC. Inside the Hub VPC, AWS Network Firewall
+#    enforces stateful Layer 7 Deep Packet Inspection (DPI) and strict domain
+#    allowlists (SNI/FQDN filtering) before any traffic is allowed out to the NAT
+#    Gateway, effectively mitigating data exfiltration risks.
+# ------------------------------------------------------------------------------
 AVD-AWS-0104
-aws-ec2-no-public-egress-sgr
+
+# ------------------------------------------------------------------------------
+# Rule ID:     AVD-AWS-0164
+# Description: Subnet assigns public IP addresses by default
+#              (map_public_ip_on_launch = true)
+# Severity:    HIGH
+# Target:      modules/01.networking/003.hub_vpc/main.tf
+#              Resource: aws_subnet.hub_nat_public_subnet
+# ------------------------------------------------------------------------------
+# Justification:
+# 1. Architectural Role: The 'hub-nat-public' subnets are the designated public
+#    perimeter subnets within the centralized Hub VPC. They directly interface
+#    with the Internet Gateway (IGW) and host public egress NAT Gateways as well
+#    as any potential bastion/management entry points.
+# 2. Public IP Requirement: Resources deployed into public perimeter subnets
+#    require public IP assignment by design to support internet routing and NAT
+#    gateway operations.
+# 3. Isolation of Compute: All Databricks compute instances and Transit Gateway
+#    attachments reside exclusively in private subnets (map_public_ip_on_launch = false)
+#    with no direct public IP assignment or direct inbound connectivity from the
+#    internet.
+# ------------------------------------------------------------------------------
 AVD-AWS-0164

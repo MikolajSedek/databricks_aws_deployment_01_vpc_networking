@@ -16,8 +16,8 @@
 - **Key Business & Security Outcomes**:
   - **No Public Cluster Footprint**: Databricks worker nodes are strictly contained within private subnets without public IP addresses.
   - **Stateful Domain Allowlisting**: All internet traffic is filtered against an explicit whitelist of Databricks control plane endpoints, repository mirrors, and permitted S3 buckets.
-  - **Multi-AZ Infrastructure Readiness**: Configured with modular CIDR schemes allowing clean scaling to multi-AZ high availability.
-  - **Hardened State Storage**: Dedicated S3 bucket encrypted with a customer-managed KMS key and DynamoDB state locking.
+  - **Dynamic Multi-AZ Infrastructure**: Configured with dynamic availability zone discovery (`data.aws_availability_zones.available_azs`) ensuring high availability and multi-AZ resilience.
+  - **Hardened State Storage**: Dedicated S3 bucket encrypted with a customer-managed KMS key and automatic 90-day non-current version lifecycle expiration.
 
 ---
 
@@ -25,7 +25,7 @@
 
 ### 2.1 Provisioning Lifecycle
 1. **Security & State Backend**:
-   The `kms_key` module provisions a CMK (`alias/vpc_networking_backend_kms_key-dev`). The `backend_bucket` module creates an encrypted, versioned S3 bucket for Terraform state management.
+   The `kms_key` module provisions a CMK (`alias/vpc_networking_backend_kms_key-dev`). The `backend_bucket` module creates an encrypted, versioned S3 bucket with 90-day version lifecycle expiration for Terraform state management.
 2. **Network Foundation Deployment**:
    The `spoke_vpc` module provisions the customer-managed VPC (`10.1.0.0/16`), private compute subnets (`10.1.1.0/24`), TGW attachment subnets (`10.1.2.0/24`), cluster security groups, and VPC endpoints (S3 Gateway, STS Interface, Kinesis Interface).
    Concurrently, the `hub_vpc` module provisions the inspection VPC (`10.0.0.0/20`), public NAT subnets (`10.0.2.0/24`), firewall subnets (`10.0.3.0/24`), and TGW attachment subnets (`10.0.1.0/24`), along with an Elastic IP and NAT Gateway.
@@ -56,7 +56,8 @@
 | **Spoke VPC** | `spoke-tgw-private-dev-eu-central-1a` | `10.1.2.0/24` | `eu-central-1a` | Transit Gateway Attachment |
 
 ### 3.2 Security Groups & Rule Sets
-- **`default_spoke_sg-dev`**:\n  - Ingress: Self-referencing TCP/UDP/ICMP across all ports for inter-cluster communication.
+- **`default_spoke_sg-dev`**:
+  - Ingress: Self-referencing TCP/UDP across all ports for inter-cluster communication.
   - Egress: Self-referencing intra-cluster traffic; TCP egress on port 443 (HTTPS), port 3306 (Hive Metastore), and port 6666 (Secure Cluster Connectivity).
 - **AWS Network Firewall Rules**:
   - Stateful rule group filtering HTTP/HTTPS hostnames against Databricks control plane endpoints (`frankfurt.cloud.databricks.com`, etc.), package managers (PyPI, CRAN), and S3 regional endpoints.
@@ -141,8 +142,8 @@ graph TD
     ModBackend["module.backend_bucket (03.storage/001.env_backend_bucket)"]:::mod
     ModSpoke["module.spoke_vpc (01.networking/002.spoke_vpc)"]:::mod
     ModHub["module.hub_vpc (01.networking/003.hub_vpc)"]:::mod
-    ModTGW["module.spoke_hub_transit_gateway (01.networking/004.spoke_hub_tgw)"]:::mod
-    ModFW["module.hub_vpc_network_firewall (01.networking/005.networking_firewall)"]:::mod
+    ModTGW["module.spoke_hub_transit_gateway (01.networking/004.transit_gateway_spoke_hub)"]:::mod
+    ModFW["module.hub_vpc_network_firewall (01.networking/005.hub_networking_firewall)"]:::mod
 
     DevConfig --> ModKMS
     DevConfig --> ModBackend
@@ -166,11 +167,11 @@ graph TD
 | Module Identifier | Source Directory | Responsibility | Key Input Dependencies |
 |:---|:---|:---|:---|
 | `module.kms_key` | [`../../modules/02.security/001.kms_key`](file:///modules/02.security/001.kms_key) | Provisions customer-managed KMS key for backend state and encryption. | `environment`, `kms_key_alias` |
-| `module.backend_bucket` | [`../../modules/03.storage/001.env_backend_bucket`](file:///modules/03.storage/001.env_backend_bucket) | S3 state bucket with SSE-KMS, object versioning, and public access block. | `kms_key_arn`, `bucket_name` |
+| `module.backend_bucket` | [`../../modules/03.storage/001.env_backend_bucket`](file:///modules/03.storage/001.env_backend_bucket) | S3 state bucket with SSE-KMS, object versioning, 90-day lifecycle expiration, and public access block. | `kms_key_arn`, `bucket_name` |
 | `module.spoke_vpc` | [`../../modules/01.networking/002.spoke_vpc`](file:///modules/01.networking/002.spoke_vpc) | Customer-managed Spoke VPC with private subnets, security groups, and VPC endpoints. | `spoke_cidr_block`, `availability_zones` |
 | `module.hub_vpc` | [`../../modules/01.networking/003.hub_vpc`](file:///modules/01.networking/003.hub_vpc) | Inspection Hub VPC with NAT Gateway, IGW, and subnets for TGW and Firewall. | `hub_cidr_block`, `availability_zones` |
-| `module.spoke_hub_transit_gateway` | [`../../modules/01.networking/004.spoke_hub_tgw`](file:///modules/01.networking/004.spoke_hub_tgw) | Interconnects Spoke and Hub VPCs with centralized route propagation. | `hub_vpc_id`, `spoke_vpc_id`, subnet IDs |
-| `module.hub_vpc_network_firewall` | [`../../modules/01.networking/005.networking_firewall`](file:///modules/01.networking/005.networking_firewall) | Provisions AWS Network Firewall and stateful FQDN allowlists. | `hub_vpc_id`, `whitelisted_urls` |
+| `module.spoke_hub_transit_gateway` | [`../../modules/01.networking/004.transit_gateway_spoke_hub`](file:///modules/01.networking/004.transit_gateway_spoke_hub) | Interconnects Spoke and Hub VPCs with centralized route propagation. | `hub_vpc_id`, `spoke_vpc_id`, subnet IDs |
+| `module.hub_vpc_network_firewall` | [`../../modules/01.networking/005.hub_networking_firewall`](file:///modules/01.networking/005.hub_networking_firewall) | Provisions AWS Network Firewall and stateful FQDN allowlists. | `hub_vpc_id`, `whitelisted_urls` |
 
 ---
 
@@ -184,9 +185,9 @@ graph TD
 | Variable | Type | Description | Current Dev Value |
 |:---|:---:|:---|:---|
 | `aws_account_id` | `string` | Allowed AWS Account ID preventing deployment to wrong account | Set via CLI or `terraform.tfvars` |
-| `aws_region` | `string` | Target AWS deployment region | `"eu-central-1"` |
-| `environment` | `string` | Environment name qualifier | `"dev"` |
-| `profile` | `string` | AWS CLI profile name | `"default"` |
+| `aws_region` | `string` | Target AWS deployment region | `\"eu-central-1\"` |
+| `environment` | `string` | Environment name qualifier | `\"dev\"` |
+| `profile` | `string` | AWS CLI profile name | `\"default\"` |
 
 ---
 

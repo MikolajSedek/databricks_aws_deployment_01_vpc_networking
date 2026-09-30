@@ -10,7 +10,7 @@
     - Enables DNS support and default route table association and propagation.
 */
 
-# Create transit gateway
+// Create transit gateway
 resource "aws_ec2_transit_gateway" "tgw" {
   description                     = "Transit Gateway for Hub/Spoke"
   auto_accept_shared_attachments  = "enable"
@@ -21,7 +21,7 @@ resource "aws_ec2_transit_gateway" "tgw" {
   })
 }
 
-# Attach Hub VPC to Transit Gateway
+// Attach Hub VPC to Transit Gateway
 resource "aws_ec2_transit_gateway_vpc_attachment" "hub" {
   subnet_ids         = var.hub_tgw_subnet_ids
   transit_gateway_id = aws_ec2_transit_gateway.tgw.id
