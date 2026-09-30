@@ -11,7 +11,7 @@
 ## 1. Executive Summary
 
 - **Purpose & Scope**:
-  This repository provisions an enterprise-grade AWS network foundation for **Databricks E2 Workspaces** using a centralized **Hub-and-Spoke Firewall Architecture**. It implements production-ready infrastructure-as-code (IaC) via modular Terraform, isolating Databricks compute resources within private customer-managed VPCs while routing all outbound traffic through a centralized inspection Hub equipped with AWS Network Firewall and AWS Transit Gateway.
+  This repository provisions enterprise-grade AWS network foundation for **Databricks E2 Workspaces** using a centralized **Hub-and-Spoke Firewall Architecture**. It implements production-ready infrastructure-as-code (IaC) via modular Terraform, isolating Databricks compute resources within private customer-managed VPCs while routing all outbound traffic through a centralized inspection Hub equipped with AWS Network Firewall and AWS Transit Gateway.
 - **Problem Statement & Solution**:
   Enterprise data platforms require strict perimeter security, exfiltration prevention, and compliance with zero-trust networking standards. Deploying Databricks clusters with direct public Internet access creates data exfiltration risks and regulatory non-compliance. This solution resolves that challenge by eliminating public IPs on Databricks clusters and enforcing centralized, stateful FQDN/domain inspection on all outbound egress traffic via AWS Network Firewall and AWS Transit Gateway.
 - **Key Business & Security Outcomes**:
