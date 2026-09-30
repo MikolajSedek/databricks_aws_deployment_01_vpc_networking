@@ -1,4 +1,4 @@
-# 004.spoke_hub_tgw
+# 004.transit_gateway_spoke_hub
 
 <!-- BEGIN_TF_DOCS -->
 ## Requirements

@@ -1,4 +1,4 @@
-# 001.vpc
+# 001.generic_vpc
 
 <!-- BEGIN_TF_DOCS -->
 ## Requirements
@@ -29,8 +29,8 @@ No modules.
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
 | <a name="input_cidr_block"></a> [cidr\_block](#input\_cidr\_block) | VPC CIDR block | `string` | n/a | yes |
-| <a name="input_postfix"></a> [postfix](#input\_postfix) | POSTFIX for VPC name | `string` | n/a | yes |
-| <a name="input_prefix"></a> [prefix](#input\_prefix) | PREFIX for VPC name | `string` | n/a | yes |
+| <a name="input_name_postfix"></a> [name\_postfix](#input\_name\_postfix) | POSTFIX for VPC name | `string` | n/a | yes |
+| <a name="input_name_prefix"></a> [name\_prefix](#input\_name\_prefix) | PREFIX for VPC name | `string` | n/a | yes |
 | <a name="input_tags"></a> [tags](#input\_tags) | Extra tags needed for the project | `map(string)` | `{}` | no |
 
 ## Outputs

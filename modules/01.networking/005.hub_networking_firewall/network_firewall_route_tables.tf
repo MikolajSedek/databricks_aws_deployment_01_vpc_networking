@@ -11,6 +11,16 @@
       for the NAT public subnet CIDRs through the Network Firewall VPC endpoint for inspection.
 */
 
+/* Get Firewall Endpoint*/
+data "aws_vpc_endpoint" "firewall" {
+  vpc_id = var.hub_vpc_id
+
+  tags = {
+    "AWSNetworkFirewallManaged" = "true"
+    "Firewall"                  = aws_networkfirewall_firewall.exfiltration_firewall.arn
+  }
+}
+
 /* Add Route from Nat Gateway to Firewall */
 resource "aws_route" "db_nat_firewall" {
   route_table_id         = var.hub_nat_public_rt_id

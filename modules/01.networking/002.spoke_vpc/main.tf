@@ -13,10 +13,10 @@
 
 /* Create Spoke VPC. */
 module "spoke_vpc" {
-  source     = "../001.vpc"
-  cidr_block = var.spoke_cidr_block
-  postfix    = var.env
-  prefix     = var.name_prefix
+  source       = "../001.generic_vpc"
+  cidr_block   = var.spoke_cidr_block
+  name_postfix = var.env
+  name_prefix  = var.name_prefix
 }
 
 /* Spoke private subnet for dataplane cluster

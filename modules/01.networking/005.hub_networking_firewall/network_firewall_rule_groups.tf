@@ -8,12 +8,12 @@
   Provisions stateful rule groups for egress inspection from Databricks compute nodes:
     - FQDN / Domain Allowlist Rule Group: Enforces strict TLS SNI and HTTP Host allowlisting
       for Databricks web application, Secure Cluster Connectivity (SCC) relay tunnel, regional
-      Hive metastore RDS database, whitelisted external URLs (PyPI, CRAN), and S3 storage endpoints.
+      Databricks metastore RDS database, whitelisted external URLs (PyPI, CRAN), and S3 storage endpoints.
     - Control Plane Rule Group: Permits TCP port 443 outbound traffic to Databricks control plane CIDR.
     - Protocol Deny Rule Group: Blocks insecure/unauthorized protocols (ICMP, FTP, SSH) originating from HOME_NET.
 */
 
-/* Firewall Rule group for accessing hive metastore and public repositories */
+/* Firewall Rule group for accessing Databricks metastore and public repositories */
 resource "aws_networkfirewall_rule_group" "databricks_fqdns_rg" {
   capacity = 100
   name     = "databricks-fqdns-rg-${var.env}"

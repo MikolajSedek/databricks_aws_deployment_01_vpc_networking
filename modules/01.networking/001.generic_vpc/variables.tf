@@ -22,12 +22,12 @@ variable "tags" {
   default     = {}
 }
 
-variable "prefix" {
+variable "name_prefix" {
   description = "PREFIX for VPC name"
   type        = string
 }
 
-variable "postfix" {
+variable "name_postfix" {
   description = "POSTFIX for VPC name"
   type        = string
 }

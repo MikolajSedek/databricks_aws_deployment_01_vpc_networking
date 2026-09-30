@@ -1,4 +1,4 @@
-# Base Amazon VPC Module (`001.vpc`)
+# Base Amazon VPC Module (`001.generic_vpc`)
 
 [![Terraform](https://img.shields.io/badge/Terraform-%3E%3D1.5.0-623CE4?logo=terraform)](https://developer.hashicorp.com/terraform/docs)
 [![AWS Provider](https://img.shields.io/badge/AWS_Provider-6.66.0-FF9900?logo=amazon-aws)](https://registry.terraform.io/providers/hashicorp/aws/latest/docs)
@@ -9,25 +9,25 @@
 ## 1. Executive Summary
 
 - **Purpose & Scope**:
-  This module provides a fundamental Amazon Virtual Private Cloud (VPC) resource primitive. It establishes an isolated virtual network baseline with enforced DNS hostnames and DNS resolution support, forming the core networking foundation for both Databricks Spoke VPCs and Hub inspection VPCs.
+  This module provides the fundamental Amazon Virtual Private Cloud (VPC) resource primitive across the Databricks networking deployment. It establishes an isolated virtual network boundary with enforced DNS hostnames and DNS resolution support, forming the core container for both Databricks Customer-Managed Spoke VPCs and centralized Inspection Hub VPCs.
 - **Problem Statement & Solution**:
-  Databricks on AWS mandates specific VPC-level DNS attributes (`enableDnsHostnames = true` and `enableDnsSupport = true`) to enable internal cluster communication, Secure Cluster Connectivity (SCC), and private AWS endpoint resolution. This module encapsulates these requirements into a standardized, reusable component, preventing configuration drift across environments and VPC types.
+  Databricks on AWS mandates specific VPC-level DNS attributes (`enable_dns_hostnames = true` and `enable_dns_support = true`) to enable internal cluster communication, Secure Cluster Connectivity (SCC) relays, and private AWS endpoint resolution. This module encapsulates these requirements into a standardized, reusable component, preventing configuration drift across environments and VPC topologies.
 - **Key Business & Security Outcomes**:
   - **Databricks Network Compliance**: Enforces required DNS capabilities out of the box.
-  - **Standardized Tagging & Naming**: Automatically composes resource names from prefix and postfix variables.
-  - **Clean Reusability**: Acts as the shared VPC engine for both Spoke compute VPCs and Hub inspection VPCs.
+  - **Standardized Tagging & Naming**: Automatically composes resource names and tags from `name_prefix` and `name_postfix` variables.
+  - **Clean Reusability**: Acts as the shared VPC foundation for both Spoke compute VPCs and Hub inspection VPCs.
 
 ---
 
 ## 2. General Logic & Operational Flow
 
-### 2.1 Provisioning Lifecycle
-1. **Input Ingestion**: The module accepts the IPv4 `cidr_block`, `prefix`, `postfix` (typically environment name), and resource `tags`.
-2. **VPC Creation**: An `aws_vpc` resource is initialized with DNS hostnames and DNS support explicitly enabled.
-3. **Identifier Export**: The generated AWS VPC identifier is exported as `vpc_id` for consumption by subnet, routing, and endpoint modules.
+### 2.1 Configuration & Provisioning Lifecycle
+1. **Variable Resolution & Input Validation**: The module accepts the IPv4 `cidr_block` (validated via `cidrhost`), `name_prefix`, `name_postfix` (typically environment name), and resource `tags`.
+2. **VPC Creation**: An `aws_vpc` resource is initialized with DNS hostnames and DNS support explicitly enabled, tagged as `${var.name_prefix}-${var.name_postfix}`.
+3. **Identifier Export**: The generated AWS VPC identifier is exported as `vpc_id` for consumption by subnet, routing, endpoint, and attachment modules.
 
-### 2.2 Role in Network Topology
-This module does not create subnets or route tables directly; it acts as the parent container. Higher-level modules (such as [`002.spoke_vpc`](file:///modules/01.networking/002.spoke_vpc) and [`003.hub_vpc`](file:///modules/01.networking/003.hub_vpc)) instantiate this module and layer subnets, internet gateways, NAT gateways, and Transit Gateway attachments within it.
+### 2.2 Network & Traffic Flow
+This module does not create subnets or route tables directly; it acts as the parent container. Higher-level orchestration modules (such as [`002.spoke_vpc`](file:///modules/01.networking/002.spoke_vpc) and [`003.hub_vpc`](file:///modules/01.networking/003.hub_vpc)) instantiate this module and provision subnets, internet gateways, NAT gateways, and Transit Gateway attachments within it.
 
 ---
 
@@ -40,8 +40,8 @@ This module does not create subnets or route tables directly; it acts as the par
 | `aws_vpc` | `this` | `cidr_block = var.cidr_block`<br/>`enable_dns_hostnames = true`<br/>`enable_dns_support = true` | Root virtual private cloud isolation boundary |
 
 ### 3.2 Security & DNS Posture
-- **DNS Resolution**: `enable_dns_support = true` ensures Amazon Route 53 Resolver resolves AWS domain names and private endpoint queries.
-- **DNS Hostnames**: `enable_dns_hostnames = true` guarantees that compute instances launched within the VPC obtain private DNS hostnames, required for Databricks cluster nodes.
+- **DNS Resolution**: `enable_dns_support = true` ensures Amazon Route 53 Resolver resolves AWS service domain names and private endpoint queries.
+- **DNS Hostnames**: `enable_dns_hostnames = true` guarantees that compute instances launched within the VPC obtain private DNS hostnames, mandatory for Databricks cluster nodes.
 
 ---
 
@@ -56,7 +56,7 @@ flowchart TD
 
     SpokeModule["Spoke VPC Module (002.spoke_vpc)"]:::consumer
     HubModule["Hub VPC Module (003.hub_vpc)"]:::consumer
-    BaseVPC["Base VPC Primitive (001.vpc)"]:::comp
+    BaseVPC["Base VPC Primitive (001.generic_vpc)"]:::comp
     AWSVPC["AWS EC2 / VPC Service"]:::comp
 
     SpokeModule -->|"Instantiates with Spoke CIDR"| BaseVPC
@@ -72,7 +72,7 @@ graph TD
     classDef res fill:#E1F5FE,stroke:#0288D1,stroke-width:1.5px,color:#01579B;
     classDef out fill:#E8F5E9,stroke:#2E7D32,stroke-width:1.5px,color:#1B5E20;
 
-    Inputs["Inputs: cidr_block, prefix, postfix, tags"]:::root
+    Inputs["Inputs: cidr_block, name_prefix, name_postfix, tags"]:::root
     VpcResource["aws_vpc.this<br/>enable_dns_hostnames: true<br/>enable_dns_support: true"]:::res
     OutputVpcId["Output: vpc_id"]:::out
 
@@ -101,9 +101,9 @@ This is a foundational leaf module. It does not invoke any submodules.
 
 | Variable | Type | Description | Required |
 |:---|:---:|:---|:---:|
-| `cidr_block` | `string` | The CIDR block for the VPC | Yes |
-| `prefix` | `string` | Prefix for the VPC Name tag | Yes |
-| `postfix` | `string` | Postfix for the VPC Name tag (typically environment) | Yes |
+| `cidr_block` | `string` | The IPv4 CIDR block for the VPC (e.g. `10.0.0.0/16`) | Yes |
+| `name_prefix` | `string` | Prefix for the VPC Name tag | Yes |
+| `name_postfix` | `string` | Postfix for the VPC Name tag (typically environment name) | Yes |
 | `tags` | `map(string)` | Additional resource tags | No |
 
 ### 6.2 Essential Outputs Summary
@@ -123,5 +123,6 @@ This is a foundational leaf module. It does not invoke any submodules.
 
 ### 7.2 Internal References
 - [Terraform Contract (`TERRAFORM.md`)](./TERRAFORM.md)
-- [Base VPC Primitive (`001.vpc`)](file:///modules/01.networking/001.vpc)
+- [Customer-Managed Spoke VPC (`002.spoke_vpc`)](file:///modules/01.networking/002.spoke_vpc)
+- [Inspection Hub VPC (`003.hub_vpc`)](file:///modules/01.networking/003.hub_vpc)
 - [Authoritative README Template](file:///.ai/README_TEMPLATE.md)

@@ -18,7 +18,7 @@
 
 | Name | Source | Version |
 |------|--------|---------|
-| <a name="module_spoke_vpc"></a> [spoke\_vpc](#module\_spoke\_vpc) | ../001.vpc | n/a |
+| <a name="module_spoke_vpc"></a> [spoke\_vpc](#module\_spoke\_vpc) | ../001.generic_vpc | n/a |
 | <a name="module_vpc_endpoints"></a> [vpc\_endpoints](#module\_vpc\_endpoints) | terraform-aws-modules/vpc/aws//modules/vpc-endpoints | 3.11.0 |
 
 ## Resources

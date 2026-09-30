@@ -43,13 +43,3 @@ resource "aws_networkfirewall_firewall" "exfiltration_firewall" {
   }
   tags = var.tags
 }
-
-/* Get Firewall Endpoint*/
-data "aws_vpc_endpoint" "firewall" {
-  vpc_id = var.hub_vpc_id
-
-  tags = {
-    "AWSNetworkFirewallManaged" = "true"
-    "Firewall"                  = aws_networkfirewall_firewall.exfiltration_firewall.arn
-  }
-}

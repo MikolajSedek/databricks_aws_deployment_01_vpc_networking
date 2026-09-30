@@ -1,42 +1,44 @@
-# Centralized Inspection & Egress Hub VPC Module (`003.hub_vpc`)
+# Central Inspection Hub VPC Module (`003.hub_vpc`)
 
 [![Terraform](https://img.shields.io/badge/Terraform-%3E%3D1.5.0-623CE4?logo=terraform)](https://developer.hashicorp.com/terraform/docs)
 [![AWS Provider](https://img.shields.io/badge/AWS_Provider-6.66.0-FF9900?logo=amazon-aws)](https://registry.terraform.io/providers/hashicorp/aws/latest/docs)
-[![Architecture](https://img.shields.io/badge/Pattern-Centralized%20Egress%20Hub-blue)](https://docs.aws.amazon.com/network-firewall/latest/developerguide/arch-centralized-symmetric.html)
+[![Security](https://img.shields.io/badge/Security-Centralized%20Egress%20Hub-orange)](https://github.com/databricks/terraform-provider-databricks/blob/main/docs/guides/aws-e2-firewall-hub-and-spoke.md)
 
 ---
 
 ## 1. Executive Summary
 
 - **Purpose & Scope**:
-  This module provisions the centralized **Hub VPC** dedicated to network traffic inspection and controlled outbound egress for enterprise Databricks deployments. It sets up dedicated subnets for AWS Transit Gateway (TGW) attachments, public subnets housing AWS NAT Gateways and Elastic IPs, dedicated subnets for AWS Network Firewall endpoints, an Internet Gateway (IGW), and the core routing tables required for symmetric traffic steering.
+  This module provisions the centralized **Inspection & Egress Hub VPC** within the Databricks Hub-and-Spoke network topology. It establishes dedicated subnet tiers for AWS Transit Gateway (TGW) attachments, AWS Network Firewall inspection endpoints, and public NAT/Internet Gateways, orchestrating the route table framework required for centralized egress filtering.
 - **Problem Statement & Solution**:
-  In a multi-VPC Databricks architecture, decentralizing NAT gateways and internet egress across each spoke VPC increases operational costs and complicates security enforcement. This module establishes a single, centralized egress Hub that receives all outbound spoke traffic via Transit Gateway, passes it through inspection subnets, and routes it out to the internet through controlled NAT Gateways.
+  In an enterprise multi-VPC architecture, distributing NAT Gateways and Internet Gateways across every compute spoke results in multiplied infrastructure costs and decentralized egress control. This module solves this by centralizing all egress routing into a hardened Hub VPC, ensuring that traffic originating from spoke workspaces can be intercepted and inspected symmetrically before reaching the public internet.
 - **Key Business & Security Outcomes**:
-  - **Centralized Security Perimeter**: All outbound Internet traffic must pass through this Hub VPC, providing a single choke point for monitoring and auditing.
-  - **Symmetric Routing Infrastructure**: Prepares edge route tables (IGW ingress route table and NAT route tables) required by AWS Network Firewall to inspect both outbound requests and return packets.
-  - **Cost Optimization**: Consolidates NAT Gateway footprint across multiple Databricks workspaces and environments.
+  - **Centralized Egress Control**: Consolidates internet-bound egress routing through a single inspection point.
+  - **Multi-Tier Subnet Isolation**: Maintains strict segregation between public gateway subnets, private transit routing subnets, and dedicated firewall endpoint subnets.
+  - **Cost-Optimized Gateway Architecture**: Leverages centralized NAT Gateways rather than redundant egress gateways per spoke VPC.
 
 ---
 
 ## 2. General Logic & Operational Flow
 
-### 2.1 Provisioning Lifecycle
-1. **VPC Container**: Instantiates the [`../001.vpc`](file:///modules/01.networking/001.vpc) module with the configured Hub CIDR block.
+### 2.1 Configuration & Provisioning Lifecycle
+1. **Base VPC Deployment**: Instantiates [`../001.generic_vpc`](file:///modules/01.networking/001.generic_vpc) to create the Hub VPC container with DNS hostnames and DNS support enabled.
 2. **Subnet Segmentation**:
-   - `hub_tgw_private_subnet`: Receives transit traffic coming across the AWS Transit Gateway.
-   - `hub_firewall_subnet`: Houses the AWS Network Firewall endpoints deployed by [`005.networking_firewall`](file:///modules/01.networking/005.networking_firewall).
-   - `hub_nat_public_subnet`: Public subnets containing Elastic IPs and NAT Gateways.
+   - `hub_tgw_private_subnet`: Dedicated subnets for AWS Transit Gateway ENI attachments.
+   - `hub_firewall_subnet`: Dedicated subnets for AWS Network Firewall endpoint ENIs.
+   - `hub_nat_public_subnet`: Public subnets for NAT Gateways and Elastic IPs.
 3. **Egress Gateway Provisioning**:
-   Provisions `aws_internet_gateway.hub_igw`, allocates an Elastic IP (`aws_eip.hub_nat_eip`), and deploys `aws_nat_gateway.hub_nat`.
+   Provisions `aws_internet_gateway.hub_igw`, allocates an Elastic IP (`aws_eip.hub_nat_eip`), and deploys `aws_nat_gateway.hub_nat` in [`vpc_hub_gateways.tf`](file:///modules/01.networking/003.hub_vpc/vpc_hub_gateways.tf).
 4. **Routing Architecture**:
-   - Directs `0.0.0.0/0` from the private TGW subnet into the NAT Gateway.
-   - Directs `0.0.0.0/0` from the firewall subnet into the Internet Gateway.
-   - Establishes edge association for `aws_route_table.hub_igw_rt` on the Internet Gateway.
+   In [`vpc_hub_route_tables.tf`](file:///modules/01.networking/003.hub_vpc/vpc_hub_route_tables.tf), associates subnets with dedicated route tables:
+   - `hub_tgw_private_rt`: Directs default egress (`0.0.0.0/0`) from the TGW attachment subnets to the NAT Gateway.
+   - `hub_firewall_rt`: Directs default egress (`0.0.0.0/0`) from the firewall subnets to the Internet Gateway.
+   - `hub_igw_rt`: Edge association on the Internet Gateway reserved for reverse inspection routing.
 
 ### 2.2 Network & Traffic Flow
-- **Ingress from Spoke**: Traffic from Databricks arrives via Transit Gateway into `hub_tgw_private_subnet`.\n- **Forward to NAT**: The TGW private route table forwards default traffic (`0.0.0.0/0`) to the NAT Gateway.
-- **Firewall Endpoint Steering**: Routes configured in [`005.networking_firewall`](file:///modules/01.networking/005.networking_firewall) route NAT outbound packets to the Network Firewall endpoint, and IGW ingress return packets back through the firewall endpoint.
+- **Ingress from Spoke**: Traffic from Databricks arrives via Transit Gateway into `hub_tgw_private_subnet`.
+- **Forward to NAT**: The TGW private route table forwards default traffic (`0.0.0.0/0`) to the NAT Gateway.
+- **Firewall Endpoint Steering**: Downstream routes configured in [`005.hub_networking_firewall`](file:///modules/01.networking/005.hub_networking_firewall) route NAT outbound packets to the Network Firewall endpoint, and IGW ingress return packets back through the firewall endpoint.
 
 ---
 
@@ -44,20 +46,20 @@
 
 ### 3.1 Subnet Architecture
 
-| Subnet Identifier | Type | Auto Public IP? | Purpose |
-|:---|:---:|:---:|:---|
-| `hub_tgw_private_subnet` | Private | No | Dedicated attachment point for AWS Transit Gateway ENIs |
-| `hub_nat_public_subnet` | Public | Yes | Hosts NAT Gateways and egress Elastic IPs |
-| `hub_firewall_subnet` | Private | No | Hosts AWS Network Firewall VPC endpoint ENIs |
+| Subnet Identifier | Configuration Variable | Auto Public IP? | Purpose |
+|:---|:---|:---:|:---|
+| `hub_tgw_private_subnet` | `hub_tgw_private_subnets_cidr` | No | Dedicated attachment point for AWS Transit Gateway ENIs |
+| `hub_nat_public_subnet` | `hub_nat_public_subnets_cidr` | Yes | Hosts NAT Gateways and egress Elastic IPs |
+| `hub_firewall_subnet` | `hub_firewall_subnets_cidr` | No | Hosts AWS Network Firewall VPC endpoint ENIs |
 
 ### 3.2 Route Tables & Associations
 
 | Route Table | Associated Subnet / Target | Destination CIDR | Target / Next Hop |
 |:---|:---|:---:|:---|
 | `hub_tgw_private_rt` | `hub_tgw_private_subnet` | `0.0.0.0/0` | NAT Gateway (`hub_nat`) |
-| `hub_nat_public_rt` | `hub_nat_public_subnet` | `0.0.0.0/0` | Wired to Network Firewall (by `005.networking_firewall`) |
+| `hub_nat_public_rt` | `hub_nat_public_subnet` | `0.0.0.0/0` | Wired to Network Firewall (by [`005.hub_networking_firewall`](file:///modules/01.networking/005.hub_networking_firewall)) |
 | `hub_firewall_rt` | `hub_firewall_subnet` | `0.0.0.0/0` | Internet Gateway (`hub_igw`) |
-| `hub_igw_rt` | Gateway: `hub_igw` | Spoke/NAT CIDRs | Wired to Network Firewall (by `005.networking_firewall`) |
+| `hub_igw_rt` | Gateway Edge: `hub_igw` | Spoke / NAT CIDRs | Wired to Network Firewall (by [`005.hub_networking_firewall`](file:///modules/01.networking/005.hub_networking_firewall)) |
 
 ---
 
@@ -106,7 +108,7 @@ graph TD
     classDef res fill:#E1F5FE,stroke:#0288D1,stroke-width:1.5px,color:#01579B;
 
     HubRoot["module.hub_vpc"]:::mod
-    BaseVPC["module.hub_vpc (../001.vpc)"]:::mod
+    BaseVPC["module.hub_vpc (../001.generic_vpc)"]:::mod
     SubnetTGW["aws_subnet.hub_tgw_private_subnet[*]"]:::res
     SubnetNAT["aws_subnet.hub_nat_public_subnet[*]"]:::res
     SubnetFW["aws_subnet.hub_firewall_subnet[*]"]:::res
@@ -137,7 +139,8 @@ graph TD
 ### 5.1 Submodules Invoked
 
 | Module Name | Source Path | Primary Role |
-|:---|:---|:---|\n| `module.hub_vpc` | [`../001.vpc`](file:///modules/01.networking/001.vpc) | Provisions the root AWS VPC with DNS resolution and DNS hostnames enabled. |
+|:---|:---|:---|
+| `module.hub_vpc` | [`../001.generic_vpc`](file:///modules/01.networking/001.generic_vpc) | Provisions the root AWS VPC with DNS resolution and DNS hostnames enabled. |
 
 ---
 
@@ -148,13 +151,15 @@ graph TD
 
 ### 6.1 Essential Inputs Summary
 
-| Variable | Type | Description |
-|:---|:---:|:---|
-| `hub_cidr_block` | `string` | IPv4 CIDR block for the Hub VPC |
-| `hub_tgw_private_subnets_cidr` | `list(string)` | CIDR blocks for TGW attachment subnets |
-| `hub_nat_public_subnets_cidr` | `list(string)` | CIDR blocks for public NAT Gateway subnets |
-| `hub_firewall_subnets_cidr` | `list(string)` | CIDR blocks for AWS Network Firewall subnets |
-| `availability_zones` | `list(string)` | Target availability zones |
+| Variable | Type | Description | Required |
+|:---|:---:|:---|:---:|
+| `hub_cidr_block` | `string` | IPv4 CIDR block for the Hub VPC | Yes |
+| `hub_tgw_private_subnets_cidr` | `list(string)` | CIDR blocks for TGW attachment subnets | Yes |
+| `hub_nat_public_subnets_cidr` | `list(string)` | CIDR blocks for public NAT Gateway subnets | Yes |
+| `hub_firewall_subnets_cidr` | `list(string)` | CIDR blocks for AWS Network Firewall subnets | Yes |
+| `availability_zones` | `list(string)` | Target availability zones | Yes |
+| `env` | `string` | Environment name qualifier (e.g. `dev`) | Yes |
+| `name_prefix` | `string` | Name prefix for Hub VPC (default: `"Hub VPC"`) | No |
 
 ### 6.2 Essential Outputs Summary
 
@@ -178,5 +183,5 @@ graph TD
 
 ### 7.2 Internal References
 - [Terraform Contract (`TERRAFORM.md`)](./TERRAFORM.md)
-- [Base VPC Primitive (`001.vpc`)](file:///modules/01.networking/001.vpc)
+- [Base VPC Primitive (`001.generic_vpc`)](file:///modules/01.networking/001.generic_vpc)
 - [Authoritative README Template](file:///.ai/README_TEMPLATE.md)

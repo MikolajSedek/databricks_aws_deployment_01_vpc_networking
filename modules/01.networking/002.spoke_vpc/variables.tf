@@ -48,6 +48,11 @@ variable "sg_ingress_protocols" {
   type        = list(string)
 }
 
+variable "availability_zones" {
+  description = "LIST of AZs for Spoke VPC networking"
+  type        = list(string)
+}
+
 variable "name_prefix" {
   description = "NAME prefix for Spoke VPC"
   type        = string
@@ -59,10 +64,7 @@ variable "env" {
   type        = string
 }
 
-variable "availability_zones" {
-  description = "LIST of AZs for Spoke VPC networking"
-  type        = list(string)
-}
+
 
 variable "tags" {
   description = "EXTRA tags for Spoke VPC and networking"

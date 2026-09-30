@@ -18,7 +18,7 @@
 
 | Name | Source | Version |
 |------|--------|---------|
-| <a name="module_hub_vpc"></a> [hub\_vpc](#module\_hub\_vpc) | ../001.vpc | n/a |
+| <a name="module_hub_vpc"></a> [hub\_vpc](#module\_hub\_vpc) | ../001.generic_vpc | n/a |
 
 ## Resources
 

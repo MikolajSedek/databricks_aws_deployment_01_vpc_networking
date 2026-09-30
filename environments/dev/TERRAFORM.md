@@ -10,7 +10,9 @@
 
 ## Providers
 
-No providers.
+| Name | Version |
+|------|---------|
+| <a name="provider_aws"></a> [aws](#provider\_aws) | 6.66.0 |
 
 ## Modules
 
@@ -18,14 +20,16 @@ No providers.
 |------|--------|---------|
 | <a name="module_backend_bucket"></a> [backend\_bucket](#module\_backend\_bucket) | ../../modules/03.storage/001.env_backend_bucket | n/a |
 | <a name="module_hub_vpc"></a> [hub\_vpc](#module\_hub\_vpc) | ../../modules/01.networking/003.hub_vpc | n/a |
-| <a name="module_hub_vpc_network_firewall"></a> [hub\_vpc\_network\_firewall](#module\_hub\_vpc\_network\_firewall) | ../../modules/01.networking/005.networking_firewall | n/a |
+| <a name="module_hub_vpc_network_firewall"></a> [hub\_vpc\_network\_firewall](#module\_hub\_vpc\_network\_firewall) | ../../modules/01.networking/005.hub_networking_firewall | n/a |
 | <a name="module_kms_key"></a> [kms\_key](#module\_kms\_key) | ../../modules/02.security/001.kms_key | n/a |
-| <a name="module_spoke_hub_transit_gateway"></a> [spoke\_hub\_transit\_gateway](#module\_spoke\_hub\_transit\_gateway) | ../../modules/01.networking/004.spoke_hub_tgw | n/a |
+| <a name="module_spoke_hub_transit_gateway"></a> [spoke\_hub\_transit\_gateway](#module\_spoke\_hub\_transit\_gateway) | ../../modules/01.networking/004.transit_gateway_spoke_hub | n/a |
 | <a name="module_spoke_vpc"></a> [spoke\_vpc](#module\_spoke\_vpc) | ../../modules/01.networking/002.spoke_vpc | n/a |
 
 ## Resources
 
-No resources.
+| Name | Type |
+|------|------|
+| [aws_availability_zones.available_azs](https://registry.terraform.io/providers/hashicorp/aws/6.66.0/docs/data-sources/availability_zones) | data source |
 
 ## Inputs
 
