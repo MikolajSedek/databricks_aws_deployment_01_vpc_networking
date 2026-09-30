@@ -48,7 +48,7 @@ flowchart TD
 
 1. **Step 1: Pre-commit Quality & Security Checks ([`01_precommit.yml`](file:///.github/workflows/01_precommit.yml))**:
    - Clones the repository and sets up Python tooling via `astral-sh/setup-uv`.
-   - Initializes HashiCorp Terraform (`1.16.3`), TFLint with custom rules (`.tflint.hcl`), and Aqua Security Trivy (`setup-trivy`).
+   - Initializes HashiCorp Terraform (`1.16.3`), TFLint with custom rules (`../../.tflint.hcl`), and Aqua Security Trivy (`setup-trivy`).
    - Runs pre-commit hooks across all files (formatting, linting, secret detection, security scanning) while skipping documentation generation.
 2. **Step 2: Terraform Validate & Plan ([`02_plan.yml`](file:///.github/workflows/02_plan.yml))**:
    - Configures AWS credentials and generates AWS shared profile files.
