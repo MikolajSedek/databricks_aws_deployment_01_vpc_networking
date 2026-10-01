@@ -33,10 +33,10 @@ flowchart TD
     classDef finish fill:#E8F5E9,stroke:#2E7D32,stroke-width:1.5px,color:#1B5E20;
 
     Trigger["Push / Pull Request / Dispatch"]:::trigger
-    Stage1["Step 1: 01_precommit.yml (Formatting, TFLint, Trivy, Checkov)"]:::stage
-    Stage2["Step 2: 02_plan.yml (Init, Validate, Plan, Artifact Upload)"]:::stage
+    Stage1["Step 1: dpl-01-precommit.yml (Formatting, TFLint, Trivy, Checkov)"]:::stage
+    Stage2["Step 2: dpl-02-plan.yml (Init, Validate, Plan, Artifact Upload)"]:::stage
     Gate["GitHub Environment Approval Gate (dev)"]:::gate
-    Stage3["Step 3: 03_apply.yml (Artifact Download, Terraform Apply)"]:::stage
+    Stage3["Step 3: dpl-03-apply.yml (Artifact Download, Terraform Apply)"]:::stage
     Done["Deployment Complete"]:::finish
 
     Trigger --> Stage1
@@ -46,17 +46,17 @@ flowchart TD
     Stage3 --> Done
 ```
 
-1. **Step 1: Pre-commit Quality & Security Checks ([`01_precommit.yml`](file:///.github/workflows/01_precommit.yml))**:
+1. **Step 1: Pre-commit Quality & Security Checks ([`dpl-01-precommit.yml`](file:///.github/workflows/dpl-01-precommit.yml))**:
    - Clones the repository and sets up Python tooling via `astral-sh/setup-uv`.
    - Initializes HashiCorp Terraform (`1.16.3`), TFLint with custom rules (`../../.tflint.hcl`), and Aqua Security Trivy (`setup-trivy`).
    - Runs pre-commit hooks across all files (formatting, linting, secret detection, security scanning) while skipping documentation generation.
-2. **Step 2: Terraform Validate & Plan ([`02_plan.yml`](file:///.github/workflows/02_plan.yml))**:
+2. **Step 2: Terraform Validate & Plan ([`dpl-02-plan.yml`](file:///.github/workflows/dpl-02-plan.yml))**:
    - Configures AWS credentials and generates AWS shared profile files.
    - Caches Terraform provider plugins (`.terraform` directory) keyed by `.terraform.lock.hcl`.
    - Checks code formatting, runs `terraform init`, and executes `terraform validate`.
    - Generates a speculative execution plan (`tfplan`) and human-readable plan summary (`tfplan.txt`).
    - Caches and uploads the binary plan artifact (5-day retention) and appends the plan summary to the GitHub Step Summary.
-3. **Step 3: Terraform Apply ([`03_apply.yml`](file:///.github/workflows/03_apply.yml))**:
+3. **Step 3: Terraform Apply ([`dpl-03-apply.yml`](file:///.github/workflows/dpl-03-apply.yml))**:
    - Gated by GitHub Environment protection rules (manual approval required in the GitHub UI).
    - Restricted to pushes on `main` or manual triggers via `workflow_dispatch`.
    - Restores cached provider plugins and initializes the backend.
@@ -84,9 +84,9 @@ graph TD
     classDef subwf fill:#E8F5E9,stroke:#2E7D32,stroke-width:1.5px,color:#1B5E20;
 
     DeployDev["deploy-dev.yml (Root Orchestrator)"]:::root
-    Precommit["01_precommit.yml (Quality & Security)"]:::subwf
-    Plan["02_plan.yml (Validate & Plan)"]:::subwf
-    Apply["03_apply.yml (Target Apply)"]:::subwf
+    Precommit["dpl-01-precommit.yml (Quality & Security)"]:::subwf
+    Plan["dpl-02-plan.yml (Validate & Plan)"]:::subwf
+    Apply["dpl-03-apply.yml (Target Apply)"]:::subwf
 
     DeployDev -->|"uses (job: precommit)"| Precommit
     DeployDev -->|"uses (job: plan, needs: precommit)"| Plan
@@ -108,9 +108,9 @@ graph TD
 | Workflow File | Trigger Type | Primary Role | Key Inputs / Defaults |
 |:---|:---:|:---|:---|
 | [`deploy-dev.yml`](file:///.github/workflows/deploy-dev.yml) | `push`, `pull_request`, `workflow_dispatch` | Root pipeline coordinator for the `dev` environment | `auto_apply: false` |
-| [`01_precommit.yml`](file:///.github/workflows/01_precommit.yml) | `workflow_call` | Runs linting, syntax formatting, and multi-engine security scans | `terraform_version: 1.16.3`, `tflint_version: latest`, `trivy_version: latest` |
-| [`02_plan.yml`](file:///.github/workflows/02_plan.yml) | `workflow_call` | Validates configuration, runs `terraform plan`, and uploads plan artifact | `working_directory: environments/dev`, `environment: dev`, `plan_artifact_name: dev-tfplan` |
-| [`03_apply.yml`](file:///.github/workflows/03_apply.yml) | `workflow_call` | Downloads plan artifact and executes `terraform apply` under environment gates | `working_directory: environments/dev`, `environment: dev`, `plan_artifact_name: dev-tfplan` |
+| [`dpl-01-precommit.yml`](file:///.github/workflows/dpl-01-precommit.yml) | `workflow_call` | Runs linting, syntax formatting, and multi-engine security scans | `terraform_version: 1.16.3`, `tflint_version: latest`, `trivy_version: latest` |
+| [`dpl-02-plan.yml`](file:///.github/workflows/dpl-02-plan.yml) | `workflow_call` | Validates configuration, runs `terraform plan`, and uploads plan artifact | `working_directory: environments/dev`, `environment: dev`, `plan_artifact_name: dev-tfplan` |
+| [`dpl-03-apply.yml`](file:///.github/workflows/dpl-03-apply.yml) | `workflow_call` | Downloads plan artifact and executes `terraform apply` under environment gates | `working_directory: environments/dev`, `environment: dev`, `plan_artifact_name: dev-tfplan` |
 
 ---
 
@@ -122,16 +122,16 @@ To execute the pipelines successfully, the following repository secrets and vari
 
 | Secret Name | Purpose | Required By |
 |:---|:---|:---:|
-| `AWS_ACCESS_KEY_ID` | AWS deployment credentials access key | `02_plan.yml`, `03_apply.yml` |
-| `AWS_SECRET_ACCESS_KEY` | AWS deployment credentials secret key | `02_plan.yml`, `03_apply.yml` |
-| `AWS_SESSION_TOKEN` | Optional session token for temporary STS credentials | `02_plan.yml`, `03_apply.yml` |
-| `AWS_PROFILE_ROLE_ARN` | IAM role ARN for assumed profile execution | `02_plan.yml`, `03_apply.yml` |
-| `AWS_ACCOUNT_ID` | Allowed AWS Account ID for cross-account protection | `02_plan.yml`, `03_apply.yml` |
-| `AWS_REGION` | Target AWS deployment region (defaults to `eu-central-1`) | `02_plan.yml`, `03_apply.yml` |
+| `AWS_ACCESS_KEY_ID` | AWS deployment credentials access key | `dpl-02-plan.yml`, `dpl-03-apply.yml` |
+| `AWS_SECRET_ACCESS_KEY` | AWS deployment credentials secret key | `dpl-02-plan.yml`, `dpl-03-apply.yml` |
+| `AWS_SESSION_TOKEN` | Optional session token for temporary STS credentials | `dpl-02-plan.yml`, `dpl-03-apply.yml` |
+| `AWS_PROFILE_ROLE_ARN` | IAM role ARN for assumed profile execution | `dpl-02-plan.yml`, `dpl-03-apply.yml` |
+| `AWS_ACCOUNT_ID` | Allowed AWS Account ID for cross-account protection | `dpl-02-plan.yml`, `dpl-03-apply.yml` |
+| `AWS_REGION` | Target AWS deployment region (defaults to `eu-central-1`) | `dpl-02-plan.yml`, `dpl-03-apply.yml` |
 
 ### 5.2 GitHub Environment Setup
 - Create an environment named `dev` under **Settings** $\rightarrow$ **Environments**.
-- Configure **Deployment protection rules** (e.g., required reviewers) to enforce manual approvals before `03_apply.yml` executes.
+- Configure **Deployment protection rules** (e.g., required reviewers) to enforce manual approvals before `dpl-03-apply.yml` executes.
 
 ---
 
@@ -147,7 +147,7 @@ To execute the pipelines successfully, the following repository secrets and vari
 
 ### 6.2 Internal References
 - [Root Deployment Pipeline](file:///.github/workflows/deploy-dev.yml)
-- [Pre-commit Workflow](file:///.github/workflows/01_precommit.yml)
-- [Terraform Plan Workflow](file:///.github/workflows/02_plan.yml)
-- [Terraform Apply Workflow](file:///.github/workflows/03_apply.yml)
+- [Pre-commit Workflow](file:///.github/workflows/dpl-01-precommit.yml)
+- [Terraform Plan Workflow](file:///.github/workflows/dpl-02-plan.yml)
+- [Terraform Apply Workflow](file:///.github/workflows/dpl-03-apply.yml)
 - [Project Instructions & Source of Truth](file:///.ai/instructions.md)
