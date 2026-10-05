@@ -8,6 +8,7 @@ This project deploys AWS infrastructure for **Enterprise Databricks** using a **
 
 - **Objective**: Provision an enterprise-grade AWS network and security foundation for Databricks E2 workspaces using a **Hub and Spoke** architecture with centralized firewall inspection (AWS Network Firewall / Transit Gateway).
 - **Core Reference Architecture**: Follow the official Databricks guide on [AWS E2 Firewall Hub and Spoke Architecture](https://github.com/databricks/terraform-provider-databricks/blob/main/docs/guides/aws-e2-firewall-hub-and-spoke.md).
+- **Base Repository Template**: Use [https://github.com/MikolajSedek/databricks_aws_deployment_01_vpc_networking](https://github.com/MikolajSedek/databricks_aws_deployment_01_vpc_networking) as the mandatory base template for all new repositories (see [Section 6](#6-repository-scaffolding-module-architecture--operational-guardrails)).
 
 ---
 
@@ -18,6 +19,10 @@ Always ground implementations in official, up-to-date documentation. Do not rely
 ### A. Databricks AWS Official Documentation *(Imperative Sources of Truth)*
 - **Databricks on AWS Official Documentation**:
   - [Databricks on AWS Documentation](https://docs.databricks.com/aws/en/) *(Imperative source of truth for all Databricks AWS configurations, architecture, security, compute, storage, and networking requirements)*
+- **Official Databricks GitHub Repositories**:
+  - [Official Databricks GitHub Repositories](https://github.com/orgs/databricks/repositories?type=all) *(Authoritative source for official Databricks reference solutions, blueprints, tools, examples, and Terraform providers)*
+- **Databricks Terraform Provider Examples**:
+  - [Databricks Terraform Provider Examples](https://github.com/databricks/terraform-databricks-examples) *(Extra source of information with examples of using Databricks Terraform provider; when deploying with AWS, use only AWS examples)*
 - **Hub & Spoke Firewall Guide**:
   - [Databricks AWS E2 Firewall Hub and Spoke Guide](https://github.com/databricks/terraform-provider-databricks/blob/main/docs/guides/aws-e2-firewall-hub-and-spoke.md)
 - **Databricks Customer-Managed VPC**:
@@ -248,3 +253,71 @@ Mermaid CLI (`@mermaid-js/mermaid-cli`) parses markdown files, extracts fenced `
   - Maintain consistent file structure (`main.tf`, `variables.tf`, `locals.tf`, `outputs.tf`, `README.md`, `TERRAFORM.md`).
 - **Formatting & Validation**:
   - Run `terraform fmt -recursive` and validate against configured linters (TFLint, Trivy, Checkov).
+
+---
+
+## 6. Repository Scaffolding, Module Architecture & Operational Guardrails
+
+### A. Mandatory Base Repository Template (Absolute Requirement)
+> [!IMPORTANT]
+> **Base Template Requirement**: Whenever building a new repository for Databricks / AWS infrastructure, using this repository as the base template is an **absolute requirement**:
+> - **Template Repository URL**: [https://github.com/MikolajSedek/databricks_aws_deployment_01_vpc_networking](https://github.com/MikolajSedek/databricks_aws_deployment_01_vpc_networking)
+> - **Replication Scope**: Replicate the foundational repository structure, CI/CD GitHub Actions pipelines, pre-commit hook suites (`pre-commit`), security/linter configurations ([`.tflint.hcl`](file:///.tflint.hcl), [`.trivyignore`](file:///.trivyignore)), documentation templates ([`.ai/README_TEMPLATE.md`](file:///.ai/README_TEMPLATE.md)), and governance instructions ([`.ai/instructions.md`](file:///.ai/instructions.md)).
+
+### B. Module Categorization & Functional Hierarchy
+- **Functional Grouping (Not Technology)**:
+  - Add new folders under `modules/` based strictly on **business and infrastructure functionality**, **never by raw technology or resource type**.
+  - **Correct (Functional)**: `modules/01.networking/`, `modules/02.security/`, `modules/03.storage/`.
+  - **Incorrect (Technological)**: `modules/ec2/`, `modules/s3/`, `modules/iam/`, `modules/databricks/`.
+- **Subfolder Structure & Numbering**:
+  - Place all new modules within `modules/{category_number.functionality}/{module_number.module_name}/` using zero-padded sequential prefixes.
+  - Examples:
+    - `modules/01.networking/001.generic_vpc/`
+    - `modules/01.networking/002.spoke_vpc/`
+    - `modules/02.security/001.kms_key/`
+    - `modules/03.storage/001.env_backend_bucket/`
+- **DRY vs. Pragmatism**:
+  - Keep HCL code **DRY** (Don't Repeat Yourself) through reusable variables, locals, and submodules.
+  - **Avoid over-engineering**: Do not introduce unnecessary layers of indirection, excessive meta-arguments, or rigid abstractions that obscure readability and maintenance.
+
+### C. Module File Structure & Sizing Rules
+When creating any new module, strictly follow this standard file layout:
+- **`variables.tf`** (*Required*): All input variable definitions with explicit `type`, `description`, and appropriate `validation` blocks.
+- **`main.tf`** (*Required*): Core primary resource declarations.
+- **`locals.tf`** (*Optional*): Internal computations, mapped tags, and transformed data structures.
+- **`outputs.tf`** (*Optional*): Return values and attributes exported for consumption by other modules or environments.
+- **Extra Functional Files**:
+  - Break resources into additional dedicated files named by functionality to keep `main.tf` modular and compact (e.g., `vpc_spoke_endpoints.tf`, `vpc_spoke_route_tables.tf`, `vpc_spoke_security_groups.tf`, `network_firewall_rule_groups.tf`).
+- **File Length Limit**:
+  - Keep `main.tf` compact: **avoid any `main.tf` exceeding 250 lines**.
+
+### D. Authoritative Verification & Anti-Hallucination Policy
+- **Authoritative Source Verification**:
+  - Always use official, authoritative AWS and Databricks documentation and repositories (including [Official Databricks GitHub Repositories](https://github.com/orgs/databricks/repositories?type=all) and [Databricks Terraform Provider Examples](https://github.com/databricks/terraform-databricks-examples) — when deploying with AWS, use only AWS examples) when creating new Terraform code for any repository.
+  - Verify every resource, block type, argument name, and behavior against official documentation or live MCP tools (`aws-docs`, `terraform`).
+  - **Strict Anti-Hallucination**: Do not guess or invent resource arguments, attributes, or default values.
+- **Databricks Provider Scopes (Account-Level vs. Workspace-Level)**:
+  - Be explicitly aware that Databricks resources require different provider scopes:
+    - **Workspace-Level Provider** (`host = https://<workspace-instance>.cloud.databricks.com/`): Used for clusters, jobs, notebooks, repos, workspace-level permissions, and workspace directory objects.
+    - **Account-Level Provider** (`host = "https://accounts.cloud.databricks.com"`, `account_id = var.databricks_account_id`): Required for account-level provisioning including MWS networks (`databricks_mws_networks`), storage configurations (`databricks_mws_storage_configurations`), credentials (`databricks_mws_credentials`), workspaces (`databricks_mws_workspaces`), and account metastore assignments.
+  - **Never guess provider scopes**: Always check the official [Databricks Terraform Provider Documentation](https://registry.terraform.io/providers/databricks/databricks/latest/docs) to determine whether a resource operates at the account or workspace level.
+
+### E. Pre-Commit Execution, Documentation & Exception Handling
+- **Pre-Commit Execution**:
+  - Always execute pre-commit checks (`pre-commit run --all-files`) against newly created or modified code to validate formatting, linting, and security compliance.
+- **Module README Generation**:
+  - Provide a comprehensive `README.md` for each module adhering to the authoritative template ([`.ai/README_TEMPLATE.md`](file:///.ai/README_TEMPLATE.md)).
+  - Ensure the corresponding `TERRAFORM.md` is generated and up-to-date (via `terraform-docs`).
+- **Clear Documentation of Security Exceptions**:
+  - If a security or linting exception is required (e.g., in [`.trivyignore`](file:///.trivyignore), [`.tflint.hcl`](file:///.tflint.hcl), or checkov skip comments), **always document it clearly and comprehensively**.
+  - Document the Rule ID, Description, Target Resource, and detailed Justification covering:
+    1. Functional requirement.
+    2. Cloud provider / tooling limitation.
+    3. Compensating security control (see [`.trivyignore`](file:///.trivyignore) for reference format).
+
+### F. Verification & Operational Guardrails
+- **Terraform Verification / Validation**:
+  - At the end of implementation, always run `terraform validate` (`terraform verify`) across all modified modules and environments to ensure structural and syntactic validity.
+- **Strict Apply Guardrail**:
+  > [!CAUTION]
+  > **NEVER run `terraform apply` without clear, explicit user consent.**
