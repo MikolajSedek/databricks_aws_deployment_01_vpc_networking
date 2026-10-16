@@ -189,6 +189,8 @@ graph TD
 | `environment` | `string` | Environment name qualifier | `\"dev\"` |
 | `profile` | `string` | AWS CLI profile name | `\"default\"` |
 
+For firewall S3 egress, configure `whitelisted_bucket_names` with all important root and Unity Catalog bucket names. Do not document the bucket-name values in this README.
+
 ---
 
 ## 7. Important Links and Resources

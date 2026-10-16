@@ -126,7 +126,7 @@ This module does not invoke external submodules. It provisions AWS Network Firew
 |:---|:---:|:---|:---:|
 | `db_resources_map` | `map(string)` | Databricks regional endpoints (web_app, tunnel, rds, control_plane) | Yes |
 | `whitelisted_urls` | `list(string)` | FQDN domains permitted through the egress filter | Yes |
-| `whitelisted_bucket_names` | `list(string)` | Storage bucket names permitted for S3 egress | Yes |
+| `whitelisted_bucket_names` | `list(string)` | All important root and Unity Catalog bucket names permitted for S3 egress; provide values in deployment configuration, not in this README | Yes |
 | `hub_vpc_id` | `string` | Hub VPC identifier | Yes |
 | `hub_firewall_subnet_ids` | `list(string)` | Subnets hosting firewall endpoint ENIs | Yes |
 | `hub_nat_public_rt_id` | `string` | Route table ID for Hub NAT public subnets | Yes |

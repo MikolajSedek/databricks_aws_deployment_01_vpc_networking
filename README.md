@@ -71,7 +71,7 @@ All changes undergo automated validation and delivery managed via GitHub Actions
 ### 3.2 Security Posture & Boundary Controls
 - **KMS Key Management**: Customer-managed KMS key with automatic rotation, deletion protection, and root/caller identity delegation.
 - **Security Groups**: Default Databricks security group enforcing self-referencing ingress/egress for intra-cluster communication and restricted TCP egress (443, 3306, 6666).
-- **Network Firewall Policy**: Stateful inspection rule groups with domain allowlists for Databricks infrastructure, metastores, and whitelisted S3 storage buckets.
+- **Network Firewall Policy**: Stateful inspection rule groups with domain allowlists for Databricks infrastructure and metastores, plus S3 egress for all important root and Unity Catalog buckets. Provide the required bucket names in deployment configuration; do not put bucket-name values in this README.
 
 ---
 

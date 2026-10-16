@@ -49,7 +49,8 @@ locals {
   hub_tgw_private_subnets_cidr   = [cidrsubnet(local.hub_cidr_block, 3, 0)]
   hub_nat_public_subnets_cidr    = [cidrsubnet(local.hub_cidr_block, 3, 1)]
   hub_firewall_subnets_cidr      = [cidrsubnet(local.hub_cidr_block, 3, 2)]
-  sg_egress_ports                = [443, 3306, 6666]
+  extra_sg_egress_ports          = range(8446, 8451)
+  sg_egress_ports                = concat(local.extra_sg_egress_ports, [443, 3306, 6666, 8443, 8444, 8445])
   sg_ingress_protocols           = ["tcp", "udp"]
   sg_egress_protocols            = ["tcp", "udp"]
   availability_zones             = data.aws_availability_zones.available_azs.names
@@ -72,5 +73,5 @@ locals {
   whitelisted_urls = [".pypi.org", ".pythonhosted.org", ".cran.r-project.org"]
 
   // add here all bucket names that need to be used for the project
-  whitelisted_bucket_names = []
+  whitelisted_bucket_names = ["msedek-dbx-dep-data-eng-root-dev", "msedek-dbx-dep-uc-metastore-root-dev"]
 }
