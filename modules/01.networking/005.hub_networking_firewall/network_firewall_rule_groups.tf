@@ -25,7 +25,7 @@ resource "aws_networkfirewall_rule_group" "databricks_fqdns_rg" {
         target_types         = ["TLS_SNI", "HTTP_HOST"]
         targets = concat(
           [local.db_web_app, local.db_tunnel, local.db_rds],
-          var.whitelisted_urls, local.fully_qualified_bucket_names
+          var.whitelisted_urls, local.qualified_bucket_names
         )
       }
     }

@@ -89,6 +89,7 @@ module "hub_vpc_network_firewall" {
   hub_nat_public_rt_id        = module.hub_vpc.hub_nat_public_rt_id
   hub_nat_public_subnets_cidr = local.hub_nat_public_subnets_cidr
   hub_vpc_id                  = module.hub_vpc.hub_vpc_id
+  region                      = var.aws_region
   spoke_cidr_block            = local.spoke_cidr_block
   whitelisted_bucket_names    = local.whitelisted_bucket_names
   whitelisted_urls            = local.whitelisted_urls

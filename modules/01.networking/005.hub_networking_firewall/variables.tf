@@ -1,3 +1,9 @@
+variable "region" {
+  description = "AWS region"
+  type        = string
+}
+
+
 variable "spoke_cidr_block" {
   description = "CIDR block for Spoke VPC"
   type        = string
