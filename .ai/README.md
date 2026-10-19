@@ -12,11 +12,12 @@
 - **Purpose & Scope**:
   The `.ai/` directory houses the authoritative architectural guidelines, Model Context Protocol (MCP) integrations, system prompt instructions, and standardized documentation templates governing all AI-assisted engineering and human development across the **Databricks AWS Hub-and-Spoke VPC Networking** repository.
 - **Problem Statement & Solution**:
-  AI assistants operating without centralized project guardrails often introduce architectural drift, hallucinated resource attributes, deprecated Terraform provider syntax, or fragmented documentation formats. The `.ai/` framework eliminates this variability by enforcing deterministic sources of truth, live MCP documentation retrieval, standardized C4 architecture visualisations, and strict pre-commit quality gates.
+  AI assistants operating without centralized project guardrails often introduce architectural drift, hallucinated resource attributes, deprecated Terraform provider syntax, or fragmented documentation formats. The `.ai/` framework eliminates this variability by enforcing deterministic sources of truth, live MCP documentation retrieval, standardized C4 architecture visualisations, repository scaffolding rules, and strict pre-commit quality gates.
 - **Key Governance & Operational Outcomes**:
   - **Authoritative Source Hierarchy**: Grounds all network and security designs in official Databricks and AWS reference architectures, preventing hallucinations.
   - **Tool-Assisted Verification (MCP)**: Equips AI agents with live MCP servers (`aws-docs` and `terraform`) to query current AWS API limits, IAM policy requirements, and Terraform registry schema definitions.
   - **Standardized Documentation Contract**: Mandates a strict separation between consumer-facing architectural narrative ([`README.md`](file:///README.md)) and auto-generated machine interfaces (`TERRAFORM.md`).
+  - **Scaffolding & Architecture Guardrails**: Enforces functional module hierarchies, file sizing limits (<= 250 lines for `main.tf`), explicit pre-commit verification, and prohibition of non-consensual `terraform apply`.
   - **Zero-Error Diagrams**: Enforces programmatic syntax validation on all Mermaid diagrams before documentation commits.
 
 ---
@@ -25,11 +26,11 @@
 
 ### 2.1 AI Agent Lifecycle & Context Flow
 1. **Context Initialization**:
-   At the start of each engineering task, AI assistants load [`instructions.md`](file:///.ai/instructions.md) as the primary behavioral system prompt. This establishes the project boundary, architectural goals, coding conventions, and documentation standards.
+   At the start of each engineering task, AI assistants load [`instructions.md`](file:///.ai/instructions.md) as the primary behavioral system prompt. This establishes the project boundary, architectural goals, coding conventions, documentation standards, and operational guardrails.
 2. **Authoritative Grounding & MCP Query**:
    When drafting or modifying Terraform resources, the assistant queries configured MCP servers defined in [`mcp/mcp.json`](file:///.ai/mcp/mcp.json) (`aws-docs` for AWS specifications and `terraform` for resource arguments) rather than relying on stale model memory.
 3. **Execution & Modular Design**:
-   Code changes adhere to the decoupled hub-and-spoke networking topology under `modules/` and orchestrated environments under `environments/`.
+   Code changes adhere to the decoupled hub-and-spoke networking topology under `modules/` (grouped by business functionality, e.g. `01.networking`, `02.security`, `03.storage`) and orchestrated environments under `environments/`.
 4. **Documentation & Validation Gate**:
    Any new or modified component must include a `README.md` following [`README_TEMPLATE.md`](file:///.ai/README_TEMPLATE.md). Mermaid diagrams must be tested against the live parser engine, and all URLs must be verified for HTTP 200 availability.
 
@@ -55,7 +56,7 @@ The repository integrates standard Model Context Protocol servers to provide rea
 
 | File / Directory | Target Audience | Primary Function / Scope |
 |:---|:---|:---|
-| [`instructions.md`](file:///.ai/instructions.md) | AI Agents & Engineers | Primary system prompt establishing architectural standards, sources of truth, MCP protocols, and validation rules. |
+| [`instructions.md`](file:///.ai/instructions.md) | AI Agents & Engineers | Primary system prompt establishing architectural standards, sources of truth, MCP protocols, module scaffolding rules, and operational guardrails. |
 | [`README_TEMPLATE.md`](file:///.ai/README_TEMPLATE.md) | AI Agents & Authors | Mandatory 7-section blueprint required for every environment and module `README.md` file. |
 | [`mcp/mcp.json`](file:///.ai/mcp/mcp.json) | AI Assistants & IDEs | Configuration manifest for launching `aws-docs` and `terraform` MCP servers. |
 | [`README.md`](file:///.ai/README.md) | All Developers | Navigational guide and governance manual for AI assistance within the repository. |
@@ -63,7 +64,7 @@ The repository integrates standard Model Context Protocol servers to provide rea
 ### 3.2 Authoritative Source Hierarchy
 When resolving architectural or configuration questions, AI assistants and engineers must prioritize sources in the following strict order:
 1. **Databricks Hub & Spoke Firewall Architecture Guide**: Primary pattern reference for central inspection routing.
-2. **Databricks on AWS Official Documentation**: Primary source of truth for workspace, compute plane, and VPC requirements.
+2. **Databricks on AWS Official Documentation & Repositories**: Primary source of truth for workspace, compute plane, VPC requirements, official GitHub repositories, and Terraform provider examples.
 3. **AWS Documentation & Well-Architected Framework (via `aws-docs` MCP)**: Official guidance for VPC, Transit Gateway, Network Firewall, and KMS policies.
 4. **Terraform AWS & Databricks Provider Registries (via `terraform` MCP)**: Canonical schema, arguments, and type constraints.
 
@@ -143,7 +144,7 @@ flowchart LR
 
 | Component | Path | Description | Key Enforcements |
 |:---|:---|:---|:---|
-| **System Instructions** | [`instructions.md`](file:///.ai/instructions.md) | Master instruction prompt for AI agents | Source of truth hierarchy, MCP usage rules, security posture, Mermaid syntax rules. |
+| **System Instructions** | [`instructions.md`](file:///.ai/instructions.md) | Master instruction prompt for AI agents | Source of truth hierarchy, MCP usage rules, security posture, Mermaid syntax rules, module scaffolding guidelines, and operational guardrails. |
 | **README Template** | [`README_TEMPLATE.md`](file:///.ai/README_TEMPLATE.md) | Standardized markdown template | 7 mandatory sections, C4 diagrams, interface table links, link integrity rules. |
 | **MCP Configuration** | [`mcp/mcp.json`](file:///.ai/mcp/mcp.json) | MCP tool launch definitions | `aws-docs` via `uvx` and `terraform` via `npx`. |
 
@@ -158,14 +159,14 @@ To prevent syntax errors across markdown viewers, all Mermaid blocks must satisf
 ## 6. Operating Guide & Developer Interface
 
 ### 6.1 Validating Mermaid Diagrams
-To validate all Mermaid diagrams across the repository using `@mermaid-js/mermaid-cli`:
+To validate Mermaid diagrams across markdown documents using `@mermaid-js/mermaid-cli`:
 
 ```bash
 # Validate a single markdown document
 npx @mermaid-js/mermaid-cli -i path/to/README.md -o /tmp/output.md
 
-# Validate all documentation via the scratch runner
-node C:\Users\msede\.gemini\antigravity-acp\brain\025d2dc6-4068-4702-913e-63bb88b147f3\scratch\validate_mermaid.mjs
+# Validate all documentation files in PowerShell
+Get-ChildItem -Recurse -Filter "README.md" | Where-Object { $_.FullName -notmatch '\\.venv\\' } | ForEach-Object { npx @mermaid-js/mermaid-cli -i $_.FullName -o "$($env:TEMP)/mermaid_test.md" }
 ```
 
 ### 6.2 Generating Terraform Interface Contracts

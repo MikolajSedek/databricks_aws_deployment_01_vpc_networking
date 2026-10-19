@@ -4,7 +4,7 @@
 [![AWS Provider](https://img.shields.io/badge/AWS_Provider-6.66.0-FF9900?logo=amazon-aws)](https://registry.terraform.io/providers/hashicorp/aws/latest/docs)
 [![Databricks Provider](https://img.shields.io/badge/Databricks_Provider-Latest-FF3621?logo=databricks)](https://registry.terraform.io/providers/databricks/databricks/latest/docs)
 [![Architecture](https://img.shields.io/badge/Architecture-Hub%20%26%20Spoke%20Firewall-blue)](https://github.com/databricks/terraform-provider-databricks/blob/main/docs/guides/aws-e2-firewall-hub-and-spoke.md)
-[![CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-2088FF?logo=github-actions)](file:///.github/README.md)
+[![CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-2088FF?logo=github-actions)](file:///.github/workflows/README.md)
 
 ---
 
@@ -16,7 +16,9 @@
   Enterprise data platforms require strict perimeter security, exfiltration prevention, and compliance with zero-trust networking standards. Deploying Databricks clusters with direct public Internet access creates data exfiltration risks and regulatory non-compliance. This solution resolves that challenge by eliminating public IPs on Databricks clusters and enforcing centralized, stateful FQDN/domain inspection on all outbound egress traffic via AWS Network Firewall and AWS Transit Gateway.
 - **Key Business & Security Outcomes**:
   - **Zero Direct Internet Exposure**: Databricks worker nodes reside exclusively in private subnets with no public IPs or internet gateways.
-  - **Centralized Egress & Exfiltration Control**: Outbound traffic is inspected by stateful AWS Network Firewall rules restricting egress to verified Databricks control plane URLs and authorized repositories.
+  - **Centralized Egress & Exfiltration Control**: Outbound traffic is inspected by stateful AWS Network Firewall rules restricting egress to verified Databricks control plane URLs, deployed workspace URLs, authorized package repositories, and storage buckets.
+  - **Comprehensive Databricks Port Hardening**: Compute cluster security groups permit outbound TCP traffic only across authorized Databricks ports (443, 3306, 6666, 2443, and 8443–8451) for data sources, metastores, PrivateLink SCC relay, compliance profiles, and extended internal services.
+  - **Dual S3 FQDN Allowlisting**: Network Firewall stateful rules dynamically allow both generic (`<bucket>.s3.amazonaws.com`) and regional (`<bucket>.s3.<region>.amazonaws.com`) FQDNs for all configured root and Unity Catalog storage buckets.
   - **Complete Data Encryption**: Customer-managed KMS keys (CMKs) enforce envelope encryption at rest across Terraform state, storage buckets, and firewall logs.
   - **Scalable Multi-VPC Interconnect**: AWS Transit Gateway (TGW) serves as a cloud router, enabling multi-account and multi-workspace scalability.
   - **Automated Quality & Compliance**: Enforced pre-commit hooks featuring `tflint`, `trivy`, `checkov`, `gitleaks`, and `terraform-docs` integrated into multi-stage GitHub Actions CI/CD pipelines.
@@ -31,13 +33,13 @@
 2. **Foundational VPC Containers**:
    Both Spoke and Hub network modules instantiate the base VPC primitive ([`001.generic_vpc`](file:///modules/01.networking/001.generic_vpc)) to establish isolated VPC containers with DNS hostnames and DNS support explicitly enabled.
 3. **Spoke VPC Provisioning**:
-   The Spoke VPC module ([`002.spoke_vpc`](file:///modules/01.networking/002.spoke_vpc)) allocates private compute subnets for Databricks clusters, TGW attachment subnets, self-referencing cluster security groups, and local VPC endpoints (Gateway S3, Interface STS, Interface Kinesis).
+   The Spoke VPC module ([`002.spoke_vpc`](file:///modules/01.networking/002.spoke_vpc)) allocates private compute subnets for Databricks clusters, TGW attachment subnets, self-referencing cluster security groups with configured egress ports (`sg_egress_ports`), and local VPC endpoints (Gateway S3, Interface STS, Interface Kinesis).
 4. **Hub VPC Provisioning**:
    The Hub VPC module ([`003.hub_vpc`](file:///modules/01.networking/003.hub_vpc)) deploys the public NAT Gateways, Internet Gateway (IGW), TGW attachment subnets, firewall subnets, and routing tables.
 5. **Transit Gateway Interconnect**:
    The Transit Gateway module ([`004.transit_gateway_spoke_hub`](file:///modules/01.networking/004.transit_gateway_spoke_hub)) attaches both the Spoke and Hub VPCs to the central AWS Transit Gateway, configuring symmetric routing between VPCs.
 6. **Firewall Inspection & Egress Routing**:
-   The Network Firewall module ([`005.hub_networking_firewall`](file:///modules/01.networking/005.hub_networking_firewall)) provisions the AWS Network Firewall into the Hub VPC firewall subnets, wires endpoint route tables, and enforces stateful domain allowlists.
+   The Network Firewall module ([`005.hub_networking_firewall`](file:///modules/01.networking/005.hub_networking_firewall)) provisions the AWS Network Firewall into the Hub VPC firewall subnets, wires endpoint route tables, and enforces stateful domain allowlists (supporting generic and regional S3 FQDNs).
 
 ### 2.2 End-to-End Traffic Flow
 - **Outbound Databricks Cluster Egress**:
@@ -49,10 +51,10 @@
 
 ### 2.3 Automated CI/CD & Delivery Model
 All changes undergo automated validation and delivery managed via GitHub Actions:
-- **Quality & Security Scanning**: [`01_precommit.yml`](file:///.github/workflows/01_precommit.yml) runs static linting (`tflint`), vulnerability scanning (`trivy`), infrastructure-as-code analysis (`checkov`), and secret detection (`gitleaks`).
-- **Deterministic Planning**: [`02_plan.yml`](file:///.github/workflows/02_plan.yml) validates configurations, generates speculative execution plans, and caches immutable plan artifacts (`tfplan`).
-- **Gated Delivery**: [`03_apply.yml`](file:///.github/workflows/03_apply.yml) executes applies against target environments under manual review protection gates.
-- For detailed pipeline architecture, see the [GitHub Actions Documentation](file:///.github/README.md).
+- **Quality & Security Scanning**: [`dpl-01-precommit.yml`](file:///.github/workflows/dpl-01-precommit.yml) runs static linting (`tflint`), vulnerability scanning (`trivy`), infrastructure-as-code analysis (`checkov`), and secret detection (`gitleaks`).
+- **Deterministic Planning**: [`dpl-02-plan.yml`](file:///.github/workflows/dpl-02-plan.yml) validates configurations, generates speculative execution plans, and caches immutable plan artifacts (`tfplan`).
+- **Gated Delivery**: [`dpl-03-apply.yml`](file:///.github/workflows/dpl-03-apply.yml) executes applies against target environments under manual review protection gates.
+- For detailed pipeline architecture, see the [GitHub Actions Documentation](file:///.github/workflows/README.md).
 
 ---
 
@@ -70,8 +72,8 @@ All changes undergo automated validation and delivery managed via GitHub Actions
 
 ### 3.2 Security Posture & Boundary Controls
 - **KMS Key Management**: Customer-managed KMS key with automatic rotation, deletion protection, and root/caller identity delegation.
-- **Security Groups**: Default Databricks security group enforcing self-referencing ingress/egress for intra-cluster communication and restricted TCP egress (443, 3306, 6666).
-- **Network Firewall Policy**: Stateful inspection rule groups with domain allowlists for Databricks infrastructure and metastores, plus S3 egress for all important root and Unity Catalog buckets. Provide the required bucket names in deployment configuration; do not put bucket-name values in this README.
+- **Security Groups**: Default Databricks security group enforcing self-referencing ingress/egress for intra-cluster communication and restricted TCP egress across required Databricks ports: 443 (HTTPS), 3306 (MySQL metastore), 6666 (Secure Cluster Connectivity PrivateLink relay), 2443 (Compliance Security Profile), and 8443–8451 (extended metastore and internal compute services).
+- **Network Firewall Policy**: Stateful inspection rule groups with domain allowlists for Databricks infrastructure, metastores, external packages, and S3 storage. Dynamically generates both generic (`<bucket>.s3.amazonaws.com`) and regional (`<bucket>.s3.<region>.amazonaws.com`) FQDN allowlist entries from configured root and Unity Catalog bucket names. Provide the required bucket names in deployment configuration; do not put bucket-name values in this README.
 
 ---
 
@@ -173,9 +175,9 @@ graph TD
     ModHubVPC --> ModBaseVPC
 
     ModKMS -.->|"KMS Key ARN"| ModBackend
-    ModHubVPC -.->|"Hub VPC & Subnet IDs"| ModTGW
-    ModSpokeVPC -.->|"Spoke VPC & Subnet IDs"| ModTGW
-    ModHubVPC -.->|"Hub Route Table & Subnets"| ModNFW
+    ModHub -.->|"Hub VPC & Subnet IDs"| ModTGW
+    ModSpoke -.->|"Spoke VPC & Subnet IDs"| ModTGW
+    ModHub -.->|"Hub Route Table & Subnets"| ModNFW
 ```
 
 ---
@@ -192,7 +194,7 @@ The repository is structured into isolated, reusable Terraform modules under `mo
 | [`modules/01.networking/002.spoke_vpc`](file:///modules/01.networking/002.spoke_vpc) | `002.spoke_vpc` | Databricks customer-managed VPC with private compute subnets, cluster security groups, and VPC endpoints. |
 | [`modules/01.networking/003.hub_vpc`](file:///modules/01.networking/003.hub_vpc) | `003.hub_vpc` | Centralized Hub VPC with NAT Gateways, Internet Gateway, firewall subnets, and routing tables. |
 | [`modules/01.networking/004.transit_gateway_spoke_hub`](file:///modules/01.networking/004.transit_gateway_spoke_hub) | `004.transit_gateway_spoke_hub` | AWS Transit Gateway interconnect managing VPC attachments, route tables, and cross-VPC propagation. |
-| [`modules/01.networking/005.hub_networking_firewall`](file:///modules/01.networking/005.hub_networking_firewall) | `005.hub_networking_firewall` | AWS Network Firewall deploying stateful rule groups, FQDN domain allowlists, and symmetric inspection routing. |
+| [`modules/01.networking/005.hub_networking_firewall`](file:///modules/01.networking/005.hub_networking_firewall) | `005.hub_networking_firewall` | AWS Network Firewall deploying stateful rule groups, FQDN domain allowlists (supporting generic and regional S3 FQDNs), and symmetric inspection routing. |
 | [`modules/02.security/001.kms_key`](file:///modules/02.security/001.kms_key) | `001.kms_key` | Customer Managed Key (CMK) provisioning with deletion protection, automated rotation, and key policy management. |
 | [`modules/03.storage/001.env_backend_bucket`](file:///modules/03.storage/001.env_backend_bucket) | `001.env_backend_bucket` | Hardened S3 state storage with SSE-KMS encryption, versioning, ownership controls, 90-day lifecycle expiration, and public access blocks. |
 
@@ -208,12 +210,12 @@ The repository is structured into isolated, reusable Terraform modules under `mo
 │   └── mcp/                              # Model Context Protocol configurations
 │       └── mcp.json                      # MCP server definitions (aws-docs, terraform)
 ├── .github/                              # CI/CD deployment pipelines & automation workflows
-│   ├── README.md                         # Comprehensive CI/CD architecture & documentation
 │   └── workflows/                        # GitHub Actions workflow definitions
+│       ├── README.md                     # Comprehensive CI/CD architecture & documentation
 │       ├── deploy-dev.yml                # Dev environment pipeline orchestrator
-│       ├── 01_precommit.yml              # Reusable pre-commit & security scans
-│       ├── 02_plan.yml                   # Reusable Terraform plan & artifact cache
-│       └── 03_apply.yml                  # Reusable gated Terraform apply
+│       ├── dpl-01-precommit.yml          # Reusable pre-commit & security scans
+│       ├── dpl-02-plan.yml               # Reusable Terraform plan & artifact cache
+│       └── dpl-03-apply.yml              # Reusable gated Terraform apply
 ├── environments/                         # Deployment environment orchestration
 │   └── dev/                              # Development environment configuration
 │       ├── main.tf                       # Module orchestration entrypoint
@@ -270,4 +272,4 @@ The repository is structured into isolated, reusable Terraform modules under `mo
 - [AI Governance & Knowledge Framework](file:///.ai/README.md)
 - [Project Guidelines & Source of Truth](file:///.ai/instructions.md)
 - [Authoritative README Template](file:///.ai/README_TEMPLATE.md)
-- [GitHub Actions Workflows Documentation](file:///.github/README.md)
+- [GitHub Actions Workflows Documentation](file:///.github/workflows/README.md)

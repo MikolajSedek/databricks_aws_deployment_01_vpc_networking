@@ -15,7 +15,8 @@
   Standard cloud networking architectures often allow direct outbound internet connectivity from compute clusters, introducing risks of data exfiltration and non-compliance with corporate security standards. In this `dev` environment, all outbound traffic originating from Databricks Spark clusters is forced across the AWS Transit Gateway into the Hub VPC, where stateful AWS Network Firewall rule groups enforce domain allowlists before egressing through NAT and Internet Gateways.
 - **Key Business & Security Outcomes**:
   - **No Public Cluster Footprint**: Databricks worker nodes are strictly contained within private subnets without public IP addresses.
-  - **Stateful Domain Allowlisting**: All internet traffic is filtered against an explicit whitelist of Databricks control plane endpoints, repository mirrors, and permitted S3 buckets.
+  - **Stateful Domain Allowlisting**: All internet traffic is filtered against an explicit whitelist of Databricks control plane endpoints, repository mirrors (PyPI, CRAN), workspace URLs, and permitted S3 buckets (both generic and regional FQDNs).
+  - **Comprehensive Egress Hardening**: Cluster security groups permit outbound traffic only across required ports (443, 3306, 6666, 2443, and 8443–8451) for Databricks operations, compliance security profiles, and extended services.
   - **Dynamic Multi-AZ Infrastructure**: Configured with dynamic availability zone discovery (`data.aws_availability_zones.available_azs`) ensuring high availability and multi-AZ resilience.
   - **Hardened State Storage**: Dedicated S3 bucket encrypted with a customer-managed KMS key and automatic 90-day non-current version lifecycle expiration.
 
@@ -27,12 +28,12 @@
 1. **Security & State Backend**:
    The `kms_key` module provisions a CMK (`alias/vpc_networking_backend_kms_key-dev`). The `backend_bucket` module creates an encrypted, versioned S3 bucket with 90-day version lifecycle expiration for Terraform state management.
 2. **Network Foundation Deployment**:
-   The `spoke_vpc` module provisions the customer-managed VPC (`10.1.0.0/16`), private compute subnets (`10.1.1.0/24`), TGW attachment subnets (`10.1.2.0/24`), cluster security groups, and VPC endpoints (S3 Gateway, STS Interface, Kinesis Interface).
+   The `spoke_vpc` module provisions the customer-managed VPC (`10.1.0.0/16`), private compute subnets (`10.1.1.0/24`), TGW attachment subnets (`10.1.2.0/24`), cluster security groups with Databricks egress ports (`sg_egress_ports`), and VPC endpoints (S3 Gateway, STS Interface, Kinesis Interface).
    Concurrently, the `hub_vpc` module provisions the inspection VPC (`10.0.0.0/20`), public NAT subnets (`10.0.2.0/24`), firewall subnets (`10.0.3.0/24`), and TGW attachment subnets (`10.0.1.0/24`), along with an Elastic IP and NAT Gateway.
 3. **Interconnect & Central Routing**:
    The `spoke_hub_transit_gateway` module establishes the AWS Transit Gateway, attaches both VPCs via their respective TGW subnets, and configures default route propagation so that Spoke traffic `0.0.0.0/0` directs into the Transit Gateway.
 4. **Firewall Inspection & Egress Steering**:
-   The `hub_vpc_network_firewall` module creates the AWS Network Firewall instance in the Hub firewall subnets and installs stateful rule groups containing Databricks FQDN allowlists. Symmetric routing directs traffic between the NAT Gateway and Network Firewall endpoints.
+   The `hub_vpc_network_firewall` module creates the AWS Network Firewall instance in the Hub firewall subnets and installs stateful rule groups containing Databricks FQDN allowlists (combining workspace URLs, package repositories, and dual generic/regional S3 bucket domains). Symmetric routing directs traffic between the NAT Gateway and Network Firewall endpoints.
 
 ### 2.2 Network & Traffic Flow
 - **Egress Path (Databricks Worker -> External SaaS / Repositories)**:
@@ -58,9 +59,9 @@
 ### 3.2 Security Groups & Rule Sets
 - **`default_spoke_sg-dev`**:
   - Ingress: Self-referencing TCP/UDP across all ports for inter-cluster communication.
-  - Egress: Self-referencing intra-cluster traffic; TCP egress on port 443 (HTTPS), port 3306 (Hive Metastore), and port 6666 (Secure Cluster Connectivity).
+  - Egress: Self-referencing intra-cluster traffic; TCP egress on port 443 (HTTPS for Databricks infrastructure, cloud data sources, and library repositories), port 3306 (external Hive Metastore), port 6666 (Secure Cluster Connectivity relay / PrivateLink), port 2443 (Compliance Security Profile), and ports 8443–8451 (future extendability: Databricks internal services, extended metastore, and REST APIs).
 - **AWS Network Firewall Rules**:
-  - Stateful rule group filtering HTTP/HTTPS hostnames against Databricks control plane endpoints (`frankfurt.cloud.databricks.com`, etc.), package managers (PyPI, CRAN), and S3 regional endpoints.
+  - Stateful rule group filtering HTTP/HTTPS hostnames against Databricks control plane endpoints (`frankfurt.cloud.databricks.com`, etc.), package managers (PyPI, CRAN, PythonHosted), deployed Databricks workspace URLs (`var.databricks_workspaces_urls`), and S3 storage bucket endpoints (both generic `.s3.amazonaws.com` and regional `.s3.<region>.amazonaws.com` domains derived dynamically from `var.databricks_buckets_names`).
 
 ---
 
@@ -168,10 +169,10 @@ graph TD
 |:---|:---|:---|:---|
 | `module.kms_key` | [`../../modules/02.security/001.kms_key`](file:///modules/02.security/001.kms_key) | Provisions customer-managed KMS key for backend state and encryption. | `environment`, `kms_key_alias` |
 | `module.backend_bucket` | [`../../modules/03.storage/001.env_backend_bucket`](file:///modules/03.storage/001.env_backend_bucket) | S3 state bucket with SSE-KMS, object versioning, 90-day lifecycle expiration, and public access block. | `kms_key_arn`, `bucket_name` |
-| `module.spoke_vpc` | [`../../modules/01.networking/002.spoke_vpc`](file:///modules/01.networking/002.spoke_vpc) | Customer-managed Spoke VPC with private subnets, security groups, and VPC endpoints. | `spoke_cidr_block`, `availability_zones` |
+| `module.spoke_vpc` | [`../../modules/01.networking/002.spoke_vpc`](file:///modules/01.networking/002.spoke_vpc) | Customer-managed Spoke VPC with private subnets, security groups, and VPC endpoints. | `spoke_cidr_block`, `availability_zones`, `sg_egress_ports` |
 | `module.hub_vpc` | [`../../modules/01.networking/003.hub_vpc`](file:///modules/01.networking/003.hub_vpc) | Inspection Hub VPC with NAT Gateway, IGW, and subnets for TGW and Firewall. | `hub_cidr_block`, `availability_zones` |
 | `module.spoke_hub_transit_gateway` | [`../../modules/01.networking/004.transit_gateway_spoke_hub`](file:///modules/01.networking/004.transit_gateway_spoke_hub) | Interconnects Spoke and Hub VPCs with centralized route propagation. | `hub_vpc_id`, `spoke_vpc_id`, subnet IDs |
-| `module.hub_vpc_network_firewall` | [`../../modules/01.networking/005.hub_networking_firewall`](file:///modules/01.networking/005.hub_networking_firewall) | Provisions AWS Network Firewall and stateful FQDN allowlists. | `hub_vpc_id`, `whitelisted_urls` |
+| `module.hub_vpc_network_firewall` | [`../../modules/01.networking/005.hub_networking_firewall`](file:///modules/01.networking/005.hub_networking_firewall) | Provisions AWS Network Firewall and stateful FQDN allowlists. | `hub_vpc_id`, `region`, `whitelisted_urls`, `whitelisted_bucket_names` |
 
 ---
 
@@ -185,11 +186,13 @@ graph TD
 | Variable | Type | Description | Current Dev Value |
 |:---|:---:|:---|:---|
 | `aws_account_id` | `string` | Allowed AWS Account ID preventing deployment to wrong account | Set via CLI or `terraform.tfvars` |
-| `aws_region` | `string` | Target AWS deployment region | `\"eu-central-1\"` |
-| `environment` | `string` | Environment name qualifier | `\"dev\"` |
-| `profile` | `string` | AWS CLI profile name | `\"default\"` |
+| `aws_region` | `string` | Target AWS deployment region | `"eu-central-1"` |
+| `environment` | `string` | Environment name qualifier | `"dev"` |
+| `profile` | `string` | AWS CLI profile name | `"default"` |
+| `databricks_workspaces_urls` | `list(string)` | List of deployed Databricks workspace URLs to allow in firewall egress | `[]` |
+| `databricks_buckets_names` | `list(string)` | List of deployed Databricks bucket names (root buckets, Unity Catalog metastore buckets) for S3 egress | `[]` |
 
-For firewall S3 egress, configure `whitelisted_bucket_names` with all important root and Unity Catalog bucket names. Do not document the bucket-name values in this README.
+For firewall S3 egress, configure `databricks_buckets_names` with all required root and Unity Catalog bucket names. The firewall module automatically derives both generic (`.s3.amazonaws.com`) and regional (`.s3.<region>.amazonaws.com`) domain targets. Do not document actual bucket-name values in this README.
 
 ---
 

@@ -10,13 +10,13 @@
 ## 1. Executive Summary
 
 - **Purpose & Scope**:
-  This directory contains the GitHub Actions automation workflows powering continuous integration, automated validation, and continuous delivery for the Databricks Hub-and-Spoke VPC networking infrastructure. It implements a reusable, multi-tier pipeline model ensuring that every pull request and push to protected branches is thoroughly validated, planned, and reviewed before changes reach AWS.
+  This directory contains the GitHub Actions automation workflows powering continuous integration, automated validation, and continuous delivery for the Databricks Hub-and-Spoke VPC networking infrastructure. It implements a reusable, multi-tier pipeline model ensuring that every commit across all branches is thoroughly validated and planned, while infrastructure deployments (`apply`) are strictly restricted to commits and pull request merges reaching `main`.
 - **Problem Statement & Solution**:
-  Deploying cloud networking and security components requires strict verification to avoid accidental outages, security group misconfigurations, or cross-account deployment drift. This CI/CD architecture splits validation into modular, reusable steps: pre-commit quality and security scanning, isolated Terraform plan generation with plan artifact caching, and environment-gated manual approval before apply execution.
+  Deploying cloud networking and security components requires strict verification to avoid accidental outages, security group misconfigurations, or cross-account deployment drift. This CI/CD architecture splits validation into modular, reusable steps: pre-commit quality and security scanning on every commit, isolated Terraform plan generation with plan artifact caching on every commit, and environment-gated manual approval before apply execution solely on `main`.
 - **Key Business & Security Outcomes**:
-  - **Shift-Left Security & Linting**: Automatically checks code formatting, runs static analysis with TFLint, scans for misconfigurations and vulnerabilities with Trivy and Checkov, and blocks credential leaks with Gitleaks.
+  - **Shift-Left Security & Linting**: Automatically checks code formatting, runs static analysis with TFLint, scans for misconfigurations and vulnerabilities with Trivy and Checkov, and blocks credential leaks with Gitleaks on every commit.
   - **Deterministic Deployments**: Plans are generated and saved as immutable binary artifacts (`tfplan`), guaranteeing that the exact reviewed plan is what gets executed during the apply phase.
-  - **Environment Protection & Least Privilege**: Deployment to target AWS accounts is gated by GitHub Environment review approvals, using dedicated AWS credentials and role profiles.
+  - **Environment Protection & Least Privilege**: Deployment to target AWS accounts is gated by GitHub Environment review approvals and restricted to the `main` branch.
   - **Modular Pipeline Reusability**: Pipeline stages are encapsulated into standalone `workflow_call` workflows, making multi-environment rollout (`dev`, `staging`, `prod`) seamless.
 
 ---
@@ -32,7 +32,7 @@ flowchart TD
     classDef gate fill:#FFF3E0,stroke:#E65100,stroke-width:1.5px,color:#BF360C;
     classDef finish fill:#E8F5E9,stroke:#2E7D32,stroke-width:1.5px,color:#1B5E20;
 
-    Trigger["Push / Pull Request / Dispatch"]:::trigger
+    Trigger["Push (All Commits) / PR (main) / Dispatch"]:::trigger
     Stage1["Step 1: dpl-01-precommit.yml (Formatting, TFLint, Trivy, Checkov)"]:::stage
     Stage2["Step 2: dpl-02-plan.yml (Init, Validate, Plan, Artifact Upload)"]:::stage
     Gate["GitHub Environment Approval Gate (dev)"]:::gate
@@ -42,15 +42,17 @@ flowchart TD
     Trigger --> Stage1
     Stage1 -->|"Success"| Stage2
     Stage2 -->|"Artifact: dev-tfplan"| Gate
-    Gate -->|"Approved (main / dispatch)"| Stage3
+    Gate -->|"Approved (main branch only)"| Stage3
     Stage3 --> Done
 ```
 
 1. **Step 1: Pre-commit Quality & Security Checks ([`dpl-01-precommit.yml`](file:///.github/workflows/dpl-01-precommit.yml))**:
+   - Runs on all commits across any branch and on pull requests targeting `main`.
    - Clones the repository and sets up Python tooling via `astral-sh/setup-uv`.
    - Initializes HashiCorp Terraform (`1.16.3`), TFLint with custom rules (`../../.tflint.hcl`), and Aqua Security Trivy (`setup-trivy`).
    - Runs pre-commit hooks across all files (formatting, linting, secret detection, security scanning) while skipping documentation generation.
 2. **Step 2: Terraform Validate & Plan ([`dpl-02-plan.yml`](file:///.github/workflows/dpl-02-plan.yml))**:
+   - Runs on all commits across any branch and on pull requests targeting `main`.
    - Configures AWS credentials and generates AWS shared profile files.
    - Caches Terraform provider plugins (`.terraform` directory) keyed by `.terraform.lock.hcl`.
    - Checks code formatting, runs `terraform init`, and executes `terraform validate`.
@@ -58,19 +60,18 @@ flowchart TD
    - Caches and uploads the binary plan artifact (5-day retention) and appends the plan summary to the GitHub Step Summary.
 3. **Step 3: Terraform Apply ([`dpl-03-apply.yml`](file:///.github/workflows/dpl-03-apply.yml))**:
    - Gated by GitHub Environment protection rules (manual approval required in the GitHub UI).
-   - Restricted to pushes on `main` or manual triggers via `workflow_dispatch`.
+   - Restricted to commits directly pushed or PRs merged to `main` (or manual triggers on `main` via `workflow_dispatch`).
    - Restores cached provider plugins and initializes the backend.
    - Downloads the approved binary plan artifact from Step 2.
    - Executes `terraform apply tfplan` with non-interactive flags, preventing drift.
 
 ### 2.2 Trigger & Branching Strategy
 
-| Event | Target Branches | Path Filtering | Automated Apply? |
-|:---|:---:|:---|:---:|
-| `pull_request` | `main`, `dev` | `environments/dev/**`, `modules/**`, config files, workflows | No (Pre-commit and Plan only) |
-| `push` | `dev` | `environments/dev/**`, `modules/**`, config files, workflows | No (Pre-commit and Plan only) |
-| `push` | `main` | `environments/dev/**`, `modules/**`, config files, workflows | Yes (Gated by Environment Approval) |
-| `workflow_dispatch` | Any branch | None (Manual selection) | Yes (If approved) |
+| Event | Target Branches | Path Filtering | Pre-commit & Plan? | Automated Apply? |
+|:---|:---:|:---:|:---:|:---:|
+| `push` | Any branch (`**`) | None (All commits) | Yes | **No** (Skipped for feature/dev branches; **Yes** for `main`, gated by Environment Approval) |
+| `pull_request` | `main` | None | Yes | **No** (Plan only; apply runs upon merge to `main`) |
+| `workflow_dispatch` | Any branch | None | Yes | **Yes** if executed on `main` (gated by Environment Approval); **No** on other branches |
 
 ---
 
@@ -107,7 +108,7 @@ graph TD
 
 | Workflow File | Trigger Type | Primary Role | Key Inputs / Defaults |
 |:---|:---:|:---|:---|
-| [`deploy-dev.yml`](file:///.github/workflows/deploy-dev.yml) | `push`, `pull_request`, `workflow_dispatch` | Root pipeline coordinator for the `dev` environment | `auto_apply: false` |
+| [`deploy-dev.yml`](file:///.github/workflows/deploy-dev.yml) | `push` (`**`), `pull_request` (`main`), `workflow_dispatch` | Root pipeline coordinator for the `dev` environment | `auto_apply: false` |
 | [`dpl-01-precommit.yml`](file:///.github/workflows/dpl-01-precommit.yml) | `workflow_call` | Runs linting, syntax formatting, and multi-engine security scans | `terraform_version: 1.16.3`, `tflint_version: latest`, `trivy_version: latest` |
 | [`dpl-02-plan.yml`](file:///.github/workflows/dpl-02-plan.yml) | `workflow_call` | Validates configuration, runs `terraform plan`, and uploads plan artifact | `working_directory: environments/dev`, `environment: dev`, `plan_artifact_name: dev-tfplan` |
 | [`dpl-03-apply.yml`](file:///.github/workflows/dpl-03-apply.yml) | `workflow_call` | Downloads plan artifact and executes `terraform apply` under environment gates | `working_directory: environments/dev`, `environment: dev`, `plan_artifact_name: dev-tfplan` |

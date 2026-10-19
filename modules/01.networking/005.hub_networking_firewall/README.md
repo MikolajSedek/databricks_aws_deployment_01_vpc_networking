@@ -14,6 +14,7 @@
   Databricks clusters require outbound connectivity to AWS package registries, Databricks Control Plane endpoints, metastore databases, and cloud storage, but allowing uninspected outbound egress poses high data exfiltration and compliance risks. This module solves this by inserting an AWS Network Firewall with stateful Suricata-compatible inspection into the egress traffic path, ensuring only explicitly allowlisted domain targets are reachable.
 - **Key Business & Security Outcomes**:
   - **Data Exfiltration Prevention**: Outbound HTTP/S traffic is restricted strictly to allowlisted Databricks infrastructure and corporate domains.
+  - **Dual S3 FQDN Allowlisting**: Automatically generates both generic (`<bucket>.s3.amazonaws.com`) and regional (`<bucket>.s3.<region>.amazonaws.com`) fully qualified domain names for all configured storage buckets.
   - **Protocol Hardening**: Drops prohibited protocols (e.g. ICMP, FTP, SSH) at the perimeter.
   - **Symmetric Egress & Ingress Inspection**: Configures symmetric VPC routing between the Hub NAT Gateway, Firewall Endpoint, and Internet Gateway.
 
@@ -25,7 +26,7 @@
 1. **Rule Group Definitions** (in [`network_firewall_rule_groups.tf`](file:///modules/01.networking/005.hub_networking_firewall/network_firewall_rule_groups.tf)):
    - `deny_protocols_rg`: Stateful rule group dropping blocked protocols (ICMP, FTP, SSH).
    - `allow_db_cpl_protocols_rg`: Stateful rule group permitting outbound TCP communication between Spoke/Hub CIDRs and Databricks control plane endpoints.
-   - `databricks_fqdns_rg`: Stateful domain list rule group permitting HTTP/HTTPS egress only to allowlisted Databricks regional endpoints and external domains.
+   - `databricks_fqdns_rg`: Stateful domain list rule group permitting HTTP/HTTPS egress only to allowlisted Databricks regional endpoints, external URLs (`whitelisted_urls`), and S3 storage buckets. In [`locals.tf`](file:///modules/01.networking/005.hub_networking_firewall/locals.tf), both generic S3 domains (`${bucket_name}.s3.amazonaws.com`) and regional S3 domains (`${bucket_name}.s3.${var.region}.amazonaws.com`) are computed dynamically from `var.whitelisted_bucket_names` and `var.region`.
 2. **Firewall Policy & Firewall Creation** (in [`main.tf`](file:///modules/01.networking/005.hub_networking_firewall/main.tf)):
    - Provisions `aws_networkfirewall_firewall_policy.egress_policy`, associating the stateful rule groups in prioritized order.
    - Provisions `aws_networkfirewall_firewall.exfiltration_firewall` across the Hub VPC firewall subnets.
@@ -48,7 +49,7 @@
 |:---|:---:|:---:|:---:|:---|
 | `deny_protocols_rg` | Stateful (5-tuple) | `100` | `DROP` | Protocols: ICMP, FTP, SSH |
 | `allow_db_cpl_protocols_rg` | Stateful (5-tuple) | `200` | `PASS` | TCP traffic to Databricks Control Plane |
-| `databricks_fqdns_rg` | Stateful (Domain List) | `300` | `ALLOW` | SNI / HTTP Host allowlist (`whitelisted_urls`, Databricks URLs, S3 URLs) |
+| `databricks_fqdns_rg` | Stateful (Domain List) | `300` | `ALLOW` | SNI / HTTP Host allowlist (`whitelisted_urls`, Databricks URLs, generic and regional S3 URLs) |
 
 ### 3.2 Symmetric Routing Points
 
@@ -124,6 +125,7 @@ This module does not invoke external submodules. It provisions AWS Network Firew
 
 | Variable | Type | Description | Required |
 |:---|:---:|:---|:---:|
+| `region` | `string` | AWS region where resources are deployed (used to construct regional S3 bucket FQDNs) | Yes |
 | `db_resources_map` | `map(string)` | Databricks regional endpoints (web_app, tunnel, rds, control_plane) | Yes |
 | `whitelisted_urls` | `list(string)` | FQDN domains permitted through the egress filter | Yes |
 | `whitelisted_bucket_names` | `list(string)` | All important root and Unity Catalog bucket names permitted for S3 egress; provide values in deployment configuration, not in this README | Yes |

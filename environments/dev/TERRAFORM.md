@@ -37,6 +37,8 @@
 |------|-------------|------|---------|:--------:|
 | <a name="input_aws_account_id"></a> [aws\_account\_id](#input\_aws\_account\_id) | The allowed AWS Account ID to prevent accidental deployment to the wrong account. | `string` | n/a | yes |
 | <a name="input_aws_region"></a> [aws\_region](#input\_aws\_region) | The AWS region where resources will be deployed. | `string` | `"eu-central-1"` | no |
+| <a name="input_databricks_buckets_names"></a> [databricks\_buckets\_names](#input\_databricks\_buckets\_names) | List of deployed Databricks bucket names | `list(string)` | `[]` | no |
+| <a name="input_databricks_workspaces_urls"></a> [databricks\_workspaces\_urls](#input\_databricks\_workspaces\_urls) | List of deployed Databricks workspace URLs | `list(string)` | `[]` | no |
 | <a name="input_environment"></a> [environment](#input\_environment) | Deployment environment name (e.g. dev, staging, prod). | `string` | `"dev"` | no |
 | <a name="input_profile"></a> [profile](#input\_profile) | AWS CLI user profile | `string` | `"default"` | no |
 
