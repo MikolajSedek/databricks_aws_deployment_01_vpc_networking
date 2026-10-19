@@ -18,6 +18,7 @@
   - **Deterministic Deployments**: Plans are generated and saved as immutable binary artifacts (`tfplan`), guaranteeing that the exact reviewed plan is what gets executed during the apply phase.
   - **Environment Protection & Least Privilege**: Deployment to target AWS accounts is gated by GitHub Environment review approvals and restricted to the `main` branch.
   - **Modular Pipeline Reusability**: Pipeline stages are encapsulated into standalone `workflow_call` workflows, making multi-environment rollout (`dev`, `staging`, `prod`) seamless.
+  - **High-Performance Caching**: Employs multi-layer caching across pre-commit hook virtual environments, TFLint plugins, uv dependencies, and Terraform provider caches to achieve rapid pipeline execution.
 
 ---
 
@@ -48,8 +49,9 @@ flowchart TD
 
 1. **Step 1: Pre-commit Quality & Security Checks ([`dpl-01-precommit.yml`](file:///.github/workflows/dpl-01-precommit.yml))**:
    - Runs on all commits across any branch and on pull requests targeting `main`.
-   - Clones the repository and sets up Python tooling via `astral-sh/setup-uv`.
+   - Clones the repository and sets up Python tooling via `astral-sh/setup-uv` (with dependency caching enabled).
    - Initializes HashiCorp Terraform (`1.16.3`), TFLint with custom rules (`../../.tflint.hcl`), and Aqua Security Trivy (`setup-trivy`).
+   - Restores cached TFLint plugins (`~/.tflint.d/plugins`) and pre-commit hook environments (`~/.cache/pre-commit`) to minimize execution duration.
    - Runs pre-commit hooks across all files (formatting, linting, secret detection, security scanning) while skipping documentation generation.
 2. **Step 2: Terraform Validate & Plan ([`dpl-02-plan.yml`](file:///.github/workflows/dpl-02-plan.yml))**:
    - Runs on all commits across any branch and on pull requests targeting `main`.
@@ -100,7 +102,7 @@ graph TD
   - `id-token: write`: OpenID Connect (OIDC) token generation for AWS IAM federation.
   - `pull-requests: write`: Attaching plan summaries to pull requests.
 - **Plan Immutability**: The plan artifact generated in Step 2 is stored as a binary archive and executed in Step 3 without re-evaluating interpolations or recalculating dynamic variables.
-- **Provider Caching**: Restoring provider plugins based on `.terraform.lock.hcl` hashes accelerates pipeline execution while guarding against upstream registry tampering.
+- **Multi-Layer Caching**: Restoring cached pre-commit environments (`~/.cache/pre-commit`), TFLint plugins (`~/.tflint.d/plugins`), uv dependencies (`uv.lock`), and Terraform provider plugins based on `.terraform.lock.hcl` hashes accelerates pipeline execution while guarding against upstream registry tampering.
 
 ---
 
