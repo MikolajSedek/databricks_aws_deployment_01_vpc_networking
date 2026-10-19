@@ -58,6 +58,15 @@ jobs:
           tflint_version: ${{ env.TFLINT_VERSION }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
+      # Cache TFLint plugins (~/.tflint.d/plugins)
+      - name: Cache TFLint Plugins
+        uses: actions/cache@v6
+        with:
+          path: ~/.tflint.d/plugins
+          key: tflint-${{ runner.os }}-${{ hashFiles('.tflint.hcl') }}
+          restore-keys: |
+            tflint-${{ runner.os }}-
+
       - name: Initialize TFLint Plugins
         run: tflint --init --config .tflint.hcl
 
@@ -67,6 +76,15 @@ jobs:
         with:
           version: ${{ env.TRIVY_VERSION }}
           token: ${{ secrets.GITHUB_TOKEN }}
+
+      # Cache Pre-commit Hook Environments (~/.cache/pre-commit)
+      - name: Cache Pre-commit Environments
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-${{ runner.os }}-${{ hashFiles('.pre-commit-config.yaml') }}
+          restore-keys: |
+            pre-commit-${{ runner.os }}-
 
       # Install project dependencies (pre-commit, checkov) via uv
       - name: Install dependencies with uv

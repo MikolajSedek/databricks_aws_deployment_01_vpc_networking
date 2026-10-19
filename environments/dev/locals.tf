@@ -49,10 +49,17 @@ locals {
   hub_tgw_private_subnets_cidr   = [cidrsubnet(local.hub_cidr_block, 3, 0)]
   hub_nat_public_subnets_cidr    = [cidrsubnet(local.hub_cidr_block, 3, 1)]
   hub_firewall_subnets_cidr      = [cidrsubnet(local.hub_cidr_block, 3, 2)]
-  sg_egress_ports                = [443, 3306, 6666]
-  sg_ingress_protocols           = ["tcp", "udp"]
-  sg_egress_protocols            = ["tcp", "udp"]
-  availability_zones             = data.aws_availability_zones.available_azs.names
+  sg_basic_ports = [
+    443,  # for Databricks infrastructure, cloud data sources, and library repositories
+    3306, # for the metastore
+    6666, # for private link
+    2443, # only for use with compliance security profile
+  ]
+  furure_extendability_ports = range(8443, 8452) # Future extendability
+  sg_egress_ports            = concat(local.sg_basic_ports, local.furure_extendability_ports)
+  sg_ingress_protocols       = ["tcp", "udp"]
+  sg_egress_protocols        = ["tcp", "udp"]
+  availability_zones         = data.aws_availability_zones.available_azs.names
 
   // Resources Groups Tags
 
@@ -69,8 +76,10 @@ locals {
   }
 
   /* FIREWALL setup */
-  whitelisted_urls = [".pypi.org", ".pythonhosted.org", ".cran.r-project.org"]
+  // add here all URLs that need to be used for the project, including databricks workspace URLs, library repositories, and other external services
+  whitelisted_urls = concat([".pypi.org", ".pythonhosted.org", ".cran.r-project.org"], var.databricks_workspaces_urls)
 
-  // add here all bucket names that need to be used for the project
-  whitelisted_bucket_names = []
+  // add here all bucket names that need to be used for the project,
+  // including databricks root buckets names, metastore buckets names, and other external buckets names
+  whitelisted_bucket_names = var.databricks_buckets_names
 }

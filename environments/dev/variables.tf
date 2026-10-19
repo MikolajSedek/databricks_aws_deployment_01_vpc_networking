@@ -46,3 +46,15 @@ variable "profile" {
   type        = string
   default     = "default"
 }
+
+variable "databricks_workspaces_urls" {
+  description = "List of deployed Databricks workspace URLs"
+  type        = list(string)
+  default     = []
+}
+
+variable "databricks_buckets_names" {
+  description = "List of deployed Databricks bucket names"
+  type        = list(string)
+  default     = []
+}

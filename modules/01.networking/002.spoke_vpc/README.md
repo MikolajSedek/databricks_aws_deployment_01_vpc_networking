@@ -16,7 +16,7 @@
   - **No Public IP Addresses**: Compute instances are provisioned exclusively in private subnets with `map_public_ip_on_launch = false`.
   - **Direct S3 Gateway Routing**: High-throughput S3 traffic routes directly within the VPC without incurring NAT Gateway data processing fees.
   - **PrivateLink for Critical AWS Services**: STS and Kinesis Interface Endpoints isolate credential vending and telemetry from internet traversal.
-  - **Compliant Intra-Cluster Security Group**: Implements self-referencing ingress/egress rules required for Spark inter-node networking alongside restricted egress ports.
+  - **Compliant Intra-Cluster Security Group**: Implements self-referencing ingress/egress rules required for Spark inter-node networking alongside restricted egress ports for Databricks infrastructure, metastore, SCC relay, and extended internal services.
 
 ---
 
@@ -30,7 +30,7 @@
 3. **Route Table & Association**:
    Creates `aws_route_table.spoke_db_private_rt`, attaches private compute subnets to it, and sets it as the VPC's main route table.
 4. **Security Group Configuration**:
-   Provisions `aws_security_group.default_spoke_sg` in [`vpc_spoke_security_groups.tf`](file:///modules/01.networking/002.spoke_vpc/vpc_spoke_security_groups.tf) with self-referencing rules for intra-cluster protocols, plus outbound TCP egress for HTTPS (443), Metastore (3306), and SCC Relay (6666).
+   Provisions `aws_security_group.default_spoke_sg` in [`vpc_spoke_security_groups.tf`](file:///modules/01.networking/002.spoke_vpc/vpc_spoke_security_groups.tf) with self-referencing rules for intra-cluster protocols, plus outbound TCP egress across configured ports via `var.sg_egress_ports` (including HTTPS 443, MySQL 3306 for Hive Metastore, 6666 for Secure Cluster Connectivity, 2443 for Compliance Security Profile, and 8443–8451 for future extendability and extended services).
 5. **VPC Endpoints Deployment**:
    Provisions VPC endpoints in [`vpc_spoke_endpoints.tf`](file:///modules/01.networking/002.spoke_vpc/vpc_spoke_endpoints.tf) via the `vpc-endpoints` submodule, deploying an S3 Gateway Endpoint attached to the compute route table, plus Interface Endpoints for STS and Kinesis attached to the compute subnets.
 
@@ -57,9 +57,11 @@
 |:---|:---:|:---:|:---|:---|
 | **Ingress** | All configured (`sg_ingress_protocols`) | All | `self = true` | Cluster inter-node communication (Spark Shuffle, RPC). |
 | **Egress** | All configured (`sg_egress_protocols`) | All | `self = true` | Cluster inter-node communication. |
-| **Egress** | TCP | `443` | `0.0.0.0/0` | HTTPS traffic to Databricks control plane & authorized APIs. |
+| **Egress** | TCP | `443` | `0.0.0.0/0` | HTTPS traffic to Databricks control plane, cloud data sources, and library repositories. |
 | **Egress** | TCP | `3306` | `0.0.0.0/0` | External Databricks / Hive Metastore database connections. |
-| **Egress** | TCP | `6666` | `0.0.0.0/0` | Secure Cluster Connectivity (SCC) relay. |
+| **Egress** | TCP | `6666` | `0.0.0.0/0` | Secure Cluster Connectivity (SCC) relay / PrivateLink. |
+| **Egress** | TCP | `2443` | `0.0.0.0/0` | Databricks Compliance Security Profile (CSP) communication. |
+| **Egress** | TCP | `8443 - 8451` | `0.0.0.0/0` | Future extendability: Databricks internal services, extended metastore, and REST APIs. |
 
 ---
 
@@ -76,7 +78,7 @@ flowchart TD
     subgraph SpokeVPC ["Spoke VPC (Customer-Managed Databricks Network)"]
         subgraph ComputeSubnets ["Databricks Compute Subnet(s)"]
             Clusters["Databricks Worker / Driver Nodes"]
-            SG["Security Group (Self-referencing + Ports 443, 3306, 6666)"]
+            SG["Security Group (Self-referencing + Egress Ports 443, 3306, 6666, 2443, 8443-8451)"]
         end
 
         subgraph TGWSubnets ["Transit Gateway Attachment Subnet(s)"]
@@ -153,6 +155,9 @@ graph TD
 | `spoke_cidr_block` | `string` | CIDR block for the entire Spoke VPC | Yes |
 | `spoke_db_private_subnets_cidr` | `list(string)` | CIDR blocks for Databricks compute private subnets | Yes |
 | `spoke_tgw_private_subnets_cidr` | `list(string)` | CIDR blocks for Transit Gateway attachment subnets | Yes |
+| `sg_egress_ports` | `list(number)` | List of TCP egress ports allowed for Databricks cluster outbound traffic (e.g. 443, 3306, 6666, 2443, 8443–8451) | Yes |
+| `sg_egress_protocols` | `list(string)` | Protocols allowed for cluster self-referencing egress | Yes |
+| `sg_ingress_protocols` | `list(string)` | Protocols allowed for cluster self-referencing ingress | Yes |
 | `availability_zones` | `list(string)` | Target availability zones for subnet deployment | Yes |
 | `env` | `string` | Environment name suffix (e.g. `dev`) | Yes |
 | `name_prefix` | `string` | Name prefix for Spoke VPC (default: `"Spoke VPC"`) | No |

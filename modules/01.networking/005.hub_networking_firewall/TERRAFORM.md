@@ -45,6 +45,7 @@ No modules.
 | <a name="input_hub_nat_public_subnets_cidr"></a> [hub\_nat\_public\_subnets\_cidr](#input\_hub\_nat\_public\_subnets\_cidr) | Hub VPC PUBLIC subnets CIDRs | `list(string)` | n/a | yes |
 | <a name="input_hub_vpc_id"></a> [hub\_vpc\_id](#input\_hub\_vpc\_id) | HUB vpc ID | `string` | n/a | yes |
 | <a name="input_protocols_control_plane"></a> [protocols\_control\_plane](#input\_protocols\_control\_plane) | List of protocols allowed for Databricks control plane communication | `list(string)` | <pre>[<br/>  "TCP"<br/>]</pre> | no |
+| <a name="input_region"></a> [region](#input\_region) | AWS region | `string` | n/a | yes |
 | <a name="input_spoke_cidr_block"></a> [spoke\_cidr\_block](#input\_spoke\_cidr\_block) | CIDR block for Spoke VPC | `string` | n/a | yes |
 | <a name="input_tags"></a> [tags](#input\_tags) | EXTRA tags for Hub VPC and networking | `map(string)` | `{}` | no |
 | <a name="input_whitelisted_bucket_names"></a> [whitelisted\_bucket\_names](#input\_whitelisted\_bucket\_names) | NAMES of the firewall whitelisted S3 buckets | `list(string)` | n/a | yes |
