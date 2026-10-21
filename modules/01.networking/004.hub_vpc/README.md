@@ -1,4 +1,4 @@
-# Central Inspection Hub VPC Module (`003.hub_vpc`)
+# Central Inspection Hub VPC Module (`004.hub_vpc`)
 
 [![Terraform](https://img.shields.io/badge/Terraform-%3E%3D1.5.0-623CE4?logo=terraform)](https://developer.hashicorp.com/terraform/docs)
 [![AWS Provider](https://img.shields.io/badge/AWS_Provider-6.66.0-FF9900?logo=amazon-aws)](https://registry.terraform.io/providers/hashicorp/aws/latest/docs)
@@ -28,9 +28,9 @@
    - `hub_firewall_subnet`: Dedicated subnets for AWS Network Firewall endpoint ENIs.
    - `hub_nat_public_subnet`: Public subnets for NAT Gateways and Elastic IPs.
 3. **Egress Gateway Provisioning**:
-   Provisions `aws_internet_gateway.hub_igw`, allocates an Elastic IP (`aws_eip.hub_nat_eip`), and deploys `aws_nat_gateway.hub_nat` in [`vpc_hub_gateways.tf`](file:///modules/01.networking/003.hub_vpc/vpc_hub_gateways.tf).
+   Provisions `aws_internet_gateway.hub_igw`, allocates an Elastic IP (`aws_eip.hub_nat_eip`), and deploys `aws_nat_gateway.hub_nat` in [`vpc_hub_gateways.tf`](file:///modules/01.networking/004.hub_vpc/vpc_hub_gateways.tf).
 4. **Routing Architecture**:
-   In [`vpc_hub_route_tables.tf`](file:///modules/01.networking/003.hub_vpc/vpc_hub_route_tables.tf), associates subnets with dedicated route tables:
+   In [`vpc_hub_route_tables.tf`](file:///modules/01.networking/004.hub_vpc/vpc_hub_route_tables.tf), associates subnets with dedicated route tables:
    - `hub_tgw_private_rt`: Directs default egress (`0.0.0.0/0`) from the TGW attachment subnets to the NAT Gateway.
    - `hub_firewall_rt`: Directs default egress (`0.0.0.0/0`) from the firewall subnets to the Internet Gateway.
    - `hub_igw_rt`: Edge association on the Internet Gateway reserved for reverse inspection routing.
@@ -38,7 +38,7 @@
 ### 2.2 Network & Traffic Flow
 - **Ingress from Spoke**: Traffic from Databricks arrives via Transit Gateway into `hub_tgw_private_subnet`.
 - **Forward to NAT**: The TGW private route table forwards default traffic (`0.0.0.0/0`) to the NAT Gateway.
-- **Firewall Endpoint Steering**: Downstream routes configured in [`005.hub_networking_firewall`](file:///modules/01.networking/005.hub_networking_firewall) route NAT outbound packets to the Network Firewall endpoint, and IGW ingress return packets back through the firewall endpoint.
+- **Firewall Endpoint Steering**: Downstream routes configured in [`006.hub_networking_firewall`](file:///modules/01.networking/006.hub_networking_firewall) route NAT outbound packets to the Network Firewall endpoint, and IGW ingress return packets back through the firewall endpoint.
 
 ---
 
@@ -57,9 +57,9 @@
 | Route Table | Associated Subnet / Target | Destination CIDR | Target / Next Hop |
 |:---|:---|:---:|:---|
 | `hub_tgw_private_rt` | `hub_tgw_private_subnet` | `0.0.0.0/0` | NAT Gateway (`hub_nat`) |
-| `hub_nat_public_rt` | `hub_nat_public_subnet` | `0.0.0.0/0` | Wired to Network Firewall (by [`005.hub_networking_firewall`](file:///modules/01.networking/005.hub_networking_firewall)) |
+| `hub_nat_public_rt` | `hub_nat_public_subnet` | `0.0.0.0/0` | Wired to Network Firewall (by [`006.hub_networking_firewall`](file:///modules/01.networking/006.hub_networking_firewall)) |
 | `hub_firewall_rt` | `hub_firewall_subnet` | `0.0.0.0/0` | Internet Gateway (`hub_igw`) |
-| `hub_igw_rt` | Gateway Edge: `hub_igw` | Spoke / NAT CIDRs | Wired to Network Firewall (by [`005.hub_networking_firewall`](file:///modules/01.networking/005.hub_networking_firewall)) |
+| `hub_igw_rt` | Gateway Edge: `hub_igw` | Spoke / NAT CIDRs | Wired to Network Firewall (by [`006.hub_networking_firewall`](file:///modules/01.networking/006.hub_networking_firewall)) |
 
 ---
 
@@ -72,32 +72,35 @@ flowchart TD
     classDef vpc fill:#E8F5E9,stroke:#2E7D32,stroke-width:2px,color:#1B5E20;
     classDef gw fill:#FFF3E0,stroke:#E65100,stroke-width:1.5px,color:#BF360C;
     classDef sub fill:#FFFFFF,stroke:#81C784,stroke-width:1.5px,color:#2E7D32;
+    classDef ext fill:#F5F5F5,stroke:#9E9E9E,stroke-width:1.5px,color:#212121;
 
     subgraph HubVPC ["Hub VPC (Egress & Inspection Container)"]
         subgraph TGWSubnets ["TGW Private Subnet(s)"]
-            TGWAttach["TGW ENIs (from Spoke)"]
+            TGWAttach["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/network/transit-gateway.png' width='32' height='32' style='width:32px;height:32px;max-width:32px;max-height:32px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>TGW ENIs (from Spoke)</b>"]
         end
 
         subgraph NATSubnets ["NAT Public Subnet(s)"]
-            NATGW["NAT Gateway (hub_nat)"]
-            EIP["Elastic IP (hub_nat_eip)"]
+            NATGW["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/network/nat-gateway.png' width='32' height='32' style='width:32px;height:32px;max-width:32px;max-height:32px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>NAT Gateway (hub_nat)</b>"]
+            EIP["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/network/vpc.png' width='28' height='28' style='width:28px;height:28px;max-width:28px;max-height:28px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>Elastic IP (hub_nat_eip)</b>"]
         end
 
         subgraph FWSubnets ["Firewall Subnet(s)"]
-            FWEP["AWS Network Firewall ENIs"]
+            FWEP["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/security/shield.png' width='32' height='32' style='width:32px;height:32px;max-width:32px;max-height:32px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>AWS Network Firewall ENIs</b>"]
         end
 
-        IGW["Internet Gateway (hub_igw)"]:::gw
+        IGW["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/network/internet-gateway.png' width='32' height='32' style='width:32px;height:32px;max-width:32px;max-height:32px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>Internet Gateway (hub_igw)</b>"]:::gw
     end
     class HubVPC vpc;
     class TGWSubnets sub;
     class NATSubnets sub;
     class FWSubnets sub;
 
+    Internet["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/general/internet-alt1.png' width='36' height='36' style='width:36px;height:36px;max-width:36px;max-height:36px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>Public Internet</b>"]:::ext
+
     TGWAttach -->|"0.0.0.0/0 via hub_tgw_private_rt"| NATGW
     NATGW -->|"Inspected Outbound"| FWEP
     FWEP -->|"0.0.0.0/0 via hub_firewall_rt"| IGW
-    IGW -->|"Egress"| Internet((Public Internet))
+    IGW -->|"Egress"| Internet
 ```
 
 ### 4.2 Level 3: Component Diagram (Terraform Resources)
@@ -107,15 +110,15 @@ graph TD
     classDef mod fill:#ECEFF1,stroke:#455A64,stroke-width:1.5px,color:#263238;
     classDef res fill:#E1F5FE,stroke:#0288D1,stroke-width:1.5px,color:#01579B;
 
-    HubRoot["module.hub_vpc"]:::mod
-    BaseVPC["module.hub_vpc (../001.generic_vpc)"]:::mod
-    SubnetTGW["aws_subnet.hub_tgw_private_subnet[*]"]:::res
-    SubnetNAT["aws_subnet.hub_nat_public_subnet[*]"]:::res
-    SubnetFW["aws_subnet.hub_firewall_subnet[*]"]:::res
-    IGWRes["aws_internet_gateway.hub_igw"]:::res
-    NATRes["aws_nat_gateway.hub_nat"]:::res
-    EIPRes["aws_eip.hub_nat_eip"]:::res
-    RTs["aws_route_table (TGW, NAT, FW, IGW)"]:::res
+    HubRoot["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/network/vpc.png' width='32' height='32' style='width:32px;height:32px;max-width:32px;max-height:32px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>module.hub_vpc</b>"]:::mod
+    BaseVPC["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/network/vpc.png' width='28' height='28' style='width:28px;height:28px;max-width:28px;max-height:28px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>module.hub_vpc (../001.generic_vpc)</b>"]:::mod
+    SubnetTGW["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/network/transit-gateway.png' width='28' height='28' style='width:28px;height:28px;max-width:28px;max-height:28px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>aws_subnet.hub_tgw_private_subnet[*]</b>"]:::res
+    SubnetNAT["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/network/nat-gateway.png' width='28' height='28' style='width:28px;height:28px;max-width:28px;max-height:28px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>aws_subnet.hub_nat_public_subnet[*]</b>"]:::res
+    SubnetFW["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/security/shield.png' width='28' height='28' style='width:28px;height:28px;max-width:28px;max-height:28px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>aws_subnet.hub_firewall_subnet[*]</b>"]:::res
+    IGWRes["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/network/internet-gateway.png' width='28' height='28' style='width:28px;height:28px;max-width:28px;max-height:28px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>aws_internet_gateway.hub_igw</b>"]:::res
+    NATRes["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/network/nat-gateway.png' width='28' height='28' style='width:28px;height:28px;max-width:28px;max-height:28px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>aws_nat_gateway.hub_nat</b>"]:::res
+    EIPRes["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/network/vpc.png' width='28' height='28' style='width:28px;height:28px;max-width:28px;max-height:28px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>aws_eip.hub_nat_eip</b>"]:::res
+    RTs["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/network/vpc.png' width='28' height='28' style='width:28px;height:28px;max-width:28px;max-height:28px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>aws_route_table (TGW, NAT, FW, IGW)</b>"]:::res
 
     HubRoot --> BaseVPC
     HubRoot --> SubnetTGW
@@ -184,4 +187,7 @@ graph TD
 ### 7.2 Internal References
 - [Terraform Contract (`TERRAFORM.md`)](./TERRAFORM.md)
 - [Base VPC Primitive (`001.generic_vpc`)](file:///modules/01.networking/001.generic_vpc)
+- [Customer-Managed Spoke VPC (`002.spoke_vpc`)](file:///modules/01.networking/002.spoke_vpc)
+- [Spoke-Hub Transit Gateway (`005.transit_gateway_spoke_hub`)](file:///modules/01.networking/005.transit_gateway_spoke_hub)
+- [Hub Network Firewall (`006.hub_networking_firewall`)](file:///modules/01.networking/006.hub_networking_firewall)
 - [Authoritative README Template](file:///.ai/README_TEMPLATE.md)

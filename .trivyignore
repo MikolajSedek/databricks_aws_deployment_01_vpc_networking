@@ -36,7 +36,7 @@ AVD-AWS-0104
 # Description: Subnet assigns public IP addresses by default
 #              (map_public_ip_on_launch = true)
 # Severity:    HIGH
-# Target:      modules/01.networking/003.hub_vpc/main.tf
+# Target:      modules/01.networking/004.hub_vpc/main.tf
 #              Resource: aws_subnet.hub_nat_public_subnet
 # ------------------------------------------------------------------------------
 # Justification:

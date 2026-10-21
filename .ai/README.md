@@ -64,9 +64,12 @@ The repository integrates standard Model Context Protocol servers to provide rea
 ### 3.2 Authoritative Source Hierarchy
 When resolving architectural or configuration questions, AI assistants and engineers must prioritize sources in the following strict order:
 1. **Databricks Hub & Spoke Firewall Architecture Guide**: Primary pattern reference for central inspection routing.
-2. **Databricks on AWS Official Documentation & Repositories**: Primary source of truth for workspace, compute plane, VPC requirements, official GitHub repositories, and Terraform provider examples.
-3. **AWS Documentation & Well-Architected Framework (via `aws-docs` MCP)**: Official guidance for VPC, Transit Gateway, Network Firewall, and KMS policies.
-4. **Terraform AWS & Databricks Provider Registries (via `terraform` MCP)**: Canonical schema, arguments, and type constraints.
+2. **Databricks Control Plane Private Connectivity Guides**: Imperative sources of truth for PrivateLink endpoints, private access settings, security groups, and Route 53 private hosted zones:
+   - [Databricks AWS PrivateLink Workspace Guide](https://registry.terraform.io/providers/databricks/databricks/latest/docs/guides/aws-private-link-workspace)
+   - [Databricks Classic PrivateLink Documentation](https://docs.databricks.com/aws/en/security/network/classic/privatelink)
+3. **Databricks on AWS Official Documentation & Repositories**: Primary source of truth for workspace, compute plane, VPC requirements, official GitHub repositories, and Terraform provider examples.
+4. **AWS Documentation & Well-Architected Framework (via `aws-docs` MCP)**: Official guidance for VPC, Transit Gateway, Network Firewall, and KMS policies.
+5. **Terraform AWS & Databricks Provider Registries (via `terraform` MCP)**: Canonical schema, arguments, and type constraints.
 
 ---
 
@@ -82,10 +85,10 @@ flowchart TD
     classDef doc fill:#1E88E5,stroke:#0D47A1,stroke-width:2px,color:#FFFFFF;
     classDef repo fill:#E8F5E9,stroke:#2E7D32,stroke-width:2px,color:#1B5E20;
 
-    Engineer["Platform Engineer / Contributor"]:::actor
-    AIAssistant["AI Assistant (Antigravity / LLM)"]:::ai
-    MCPServers["MCP Servers (aws-docs & terraform)"]:::doc
-    RepoTarget["Terraform Codebase (modules & environments)"]:::repo
+    Engineer["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/general/users.png' width='36' height='36' style='width:36px;height:36px;max-width:36px;max-height:36px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>Platform Engineer / Contributor</b>"]:::actor
+    AIAssistant["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/general/general.png' width='36' height='36' style='width:36px;height:36px;max-width:36px;max-height:36px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>AI Assistant (Antigravity / LLM)</b>"]:::ai
+    MCPServers["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/general/general.png' width='36' height='36' style='width:36px;height:36px;max-width:36px;max-height:36px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>MCP Servers (aws-docs & terraform)</b>"]:::doc
+    RepoTarget["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/general/general.png' width='36' height='36' style='width:36px;height:36px;max-width:36px;max-height:36px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>Terraform Codebase (modules & environments)</b>"]:::repo
 
     subgraph AIGovernance ["AI Governance Framework (.ai/)"]
         Instructions["instructions.md (System Prompt)"]
@@ -130,7 +133,7 @@ flowchart LR
     Readmes --> LinkCheck
     Diagrams --> MermaidCli
 
-    TFLint --> Verified["Verified Production Codebase"]:::success
+    TFLint --> Verified["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/security/shield.png' width='32' height='32' style='width:32px;height:32px;max-width:32px;max-height:32px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>Verified Production Codebase</b>"]:::success
     TFDocs --> Verified
     LinkCheck --> Verified
     MermaidCli --> Verified
@@ -152,7 +155,7 @@ flowchart LR
 To prevent syntax errors across markdown viewers, all Mermaid blocks must satisfy:
 - **Subgraph Styling**: Never use `subgraph Id[...]:::className`. Always define `subgraph Id ["Title"]` and apply styles using `class Id className;` after the block.
 - **Label Enclosure**: Always enclose node labels containing brackets, parentheses, colons, or slashes in double quotes (`["Label"]`).
-- **No HTML Tags**: Prohibit raw HTML tags such as `<br/>` in labels; use standard text formatting.
+- **HTML in Node Labels**: Restrict HTML in node labels strictly to architectural icon embeddings (`<img .../>`), line breaks (`<br/>`), and bold titles (`<b>...</b>`). All HTML tag attributes MUST use single quotes (`'...'`) inside the outer double-quoted node label string `["..."]`.
 
 ---
 
@@ -203,6 +206,8 @@ Ensure Python (`uv` / `uvx`) and Node.js (`npx`) are installed to run the config
 - [Official Databricks GitHub Repositories](https://github.com/orgs/databricks/repositories?type=all) - Authoritative catalog of official Databricks open-source repositories, reference implementations, and tooling.
 - [Databricks Terraform Provider Examples](https://github.com/databricks/terraform-databricks-examples) - Examples of using Databricks Terraform provider (when deploying with AWS, use only AWS examples).
 - [Databricks AWS E2 Firewall Hub and Spoke Guide](https://github.com/databricks/terraform-provider-databricks/blob/main/docs/guides/aws-e2-firewall-hub-and-spoke.md) - Reference pattern for centralized network firewall inspection.
+- [Databricks AWS PrivateLink Workspace Guide](https://registry.terraform.io/providers/databricks/databricks/latest/docs/guides/aws-private-link-workspace) - Imperative guide for creating AWS and Databricks resources required for private connectivity for the Control Plane.
+- [Databricks Classic PrivateLink Documentation](https://docs.databricks.com/aws/en/security/network/classic/privatelink) - Imperative documentation on private connectivity architecture, backend/frontend VPC endpoints, and network security for Databricks Control Plane.
 - [Databricks on AWS Official Documentation](https://docs.databricks.com/aws/en/) - Core portal for Databricks cloud infrastructure.
 - [AWS Network Firewall Developer Guide](https://docs.aws.amazon.com/network-firewall/latest/developerguide/what-is-aws-network-firewall.html) - Technical guide for AWS Network Firewall.
 - [AWS Transit Gateway User Guide](https://docs.aws.amazon.com/vpc/latest/tgw/what-is-transit-gateway.html) - AWS Transit Gateway networking guide.

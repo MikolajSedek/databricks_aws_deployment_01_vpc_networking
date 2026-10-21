@@ -38,7 +38,7 @@
 - **Intra-Cluster Traffic**: Spark workers communicate directly with the driver across private subnets via the self-referencing security group.
 - **S3 Data Access**: Routed directly to Amazon S3 via the Gateway VPC Endpoint prefix list in the private route table.
 - **AWS API Traffic**: Authenticates via the local STS Interface Endpoint and sends streaming telemetry via Kinesis Interface Endpoints.
-- **Egress / Control Plane Traffic**: Default route (`0.0.0.0/0`) directing into the AWS Transit Gateway is added downstream by the [`004.transit_gateway_spoke_hub`](file:///modules/01.networking/004.transit_gateway_spoke_hub) module.
+- **Egress / Control Plane Traffic**: Default route (`0.0.0.0/0`) directing into the AWS Transit Gateway is added downstream by the [`005.transit_gateway_spoke_hub`](file:///modules/01.networking/005.transit_gateway_spoke_hub) module, while private connectivity to the Databricks Control Plane is provisioned by [`003.spoke_privatelink`](file:///modules/01.networking/003.spoke_privatelink).
 
 ---
 
@@ -54,14 +54,7 @@
 ### 3.2 Security Group Rules (`default_spoke_sg`)
 
 | Direction | Protocol | Port Range | Source / Destination | Purpose |
-|:---|:---:|:---:|:---|:---|
-| **Ingress** | All configured (`sg_ingress_protocols`) | All | `self = true` | Cluster inter-node communication (Spark Shuffle, RPC). |
-| **Egress** | All configured (`sg_egress_protocols`) | All | `self = true` | Cluster inter-node communication. |
-| **Egress** | TCP | `443` | `0.0.0.0/0` | HTTPS traffic to Databricks control plane, cloud data sources, and library repositories. |
-| **Egress** | TCP | `3306` | `0.0.0.0/0` | External Databricks / Hive Metastore database connections. |
-| **Egress** | TCP | `6666` | `0.0.0.0/0` | Secure Cluster Connectivity (SCC) relay / PrivateLink. |
-| **Egress** | TCP | `2443` | `0.0.0.0/0` | Databricks Compliance Security Profile (CSP) communication. |
-| **Egress** | TCP | `8443 - 8451` | `0.0.0.0/0` | Future extendability: Databricks internal services, extended metastore, and REST APIs. |
+|:---|:---:|:---|:---|\n| **Ingress** | All configured (`sg_ingress_protocols`) | All | `self = true` | Cluster inter-node communication (Spark Shuffle, RPC). |\n| **Egress** | All configured (`sg_egress_protocols`) | All | `self = true` | Cluster inter-node communication. |\n| **Egress** | TCP | `443` | `0.0.0.0/0` | HTTPS traffic to Databricks control plane, cloud data sources, and library repositories. |\n| **Egress** | TCP | `3306` | `0.0.0.0/0` | External Databricks / Hive Metastore database connections. |\n| **Egress** | TCP | `6666` | `0.0.0.0/0` | Secure Cluster Connectivity (SCC) relay / PrivateLink. |\n| **Egress** | TCP | `2443` | `0.0.0.0/0` | Databricks Compliance Security Profile (CSP) communication. |\n| **Egress** | TCP | `8443 - 8451` | `0.0.0.0/0` | Future extendability: Databricks internal services, extended metastore, and REST APIs. |
 
 ---
 
@@ -77,17 +70,17 @@ flowchart TD
 
     subgraph SpokeVPC ["Spoke VPC (Customer-Managed Databricks Network)"]
         subgraph ComputeSubnets ["Databricks Compute Subnet(s)"]
-            Clusters["Databricks Worker / Driver Nodes"]
+            Clusters["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/onprem/analytics/databricks.png' width='36' height='36' style='width:36px;height:36px;max-width:36px;max-height:36px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>Databricks Clusters</b><br/>(Private Compute Nodes)"]
             SG["Security Group (Self-referencing + Egress Ports 443, 3306, 6666, 2443, 8443-8451)"]
         end
 
         subgraph TGWSubnets ["Transit Gateway Attachment Subnet(s)"]
-            TGWAttachment["TGW ENIs"]
+            TGWAttachment["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/network/transit-gateway.png' width='32' height='32' style='width:32px;height:32px;max-width:32px;max-height:32px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>TGW ENIs</b><br/>(Subnet Attachment)"]
         end
 
-        S3GW["S3 Gateway Endpoint"]:::endpoint
-        STSEP["STS Interface Endpoint"]:::endpoint
-        KinesisEP["Kinesis Interface Endpoint"]:::endpoint
+        S3GW["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/storage/simple-storage-service-s3.png' width='32' height='32' style='width:32px;height:32px;max-width:32px;max-height:32px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>S3 Gateway Endpoint</b>"]:::endpoint
+        STSEP["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/network/endpoint.png' width='32' height='32' style='width:32px;height:32px;max-width:32px;max-height:32px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>STS Interface Endpoint</b>"]:::endpoint
+        KinesisEP["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/network/endpoint.png' width='32' height='32' style='width:32px;height:32px;max-width:32px;max-height:32px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>Kinesis Interface Endpoint</b>"]:::endpoint
     end
     class SpokeVPC vpc;
     class ComputeSubnets subnet;
@@ -107,13 +100,13 @@ graph TD
     classDef moduleNode fill:#ECEFF1,stroke:#455A64,stroke-width:1.5px,color:#263238;
     classDef resNode fill:#E1F5FE,stroke:#0288D1,stroke-width:1.5px,color:#01579B;
 
-    SpokeRoot["module.spoke_vpc"]:::moduleNode
-    BaseVPC["module.spoke_vpc (../001.generic_vpc)"]:::moduleNode
+    SpokeRoot["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/network/vpc.png' width='28' height='28' style='width:28px;height:28px;max-width:28px;max-height:28px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>module.spoke_vpc</b>"]:::moduleNode
+    BaseVPC["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/network/vpc.png' width='28' height='28' style='width:28px;height:28px;max-width:28px;max-height:28px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>module.spoke_vpc (../001.generic_vpc)</b>"]:::moduleNode
     SubnetCompute["aws_subnet.spoke_db_private_subnet[*]"]:::resNode
     SubnetTGW["aws_subnet.spoke_tgw_private_subnet[*]"]:::resNode
     RouteTable["aws_route_table.spoke_db_private_rt"]:::resNode
     SecGroup["aws_security_group.default_spoke_sg"]:::resNode
-    VPCEndpoints["module.vpc_endpoints (S3, STS, Kinesis)"]:::moduleNode
+    VPCEndpoints["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/network/endpoint.png' width='28' height='28' style='width:28px;height:28px;max-width:28px;max-height:28px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>module.vpc_endpoints</b><br/>(S3, STS, Kinesis)"]:::moduleNode
 
     SpokeRoot --> BaseVPC
     SpokeRoot --> SubnetCompute
@@ -182,4 +175,5 @@ graph TD
 ### 7.2 Internal References
 - [Terraform Contract (`TERRAFORM.md`)](./TERRAFORM.md)
 - [Base VPC Primitive (`001.generic_vpc`)](file:///modules/01.networking/001.generic_vpc)
+- [Spoke PrivateLink Module (`003.spoke_privatelink`)](file:///modules/01.networking/003.spoke_privatelink)
 - [Authoritative README Template](file:///.ai/README_TEMPLATE.md)

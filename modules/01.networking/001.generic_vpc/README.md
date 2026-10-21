@@ -27,7 +27,7 @@
 3. **Identifier Export**: The generated AWS VPC identifier is exported as `vpc_id` for consumption by subnet, routing, endpoint, and attachment modules.
 
 ### 2.2 Network & Traffic Flow
-This module does not create subnets or route tables directly; it acts as the parent container. Higher-level orchestration modules (such as [`002.spoke_vpc`](file:///modules/01.networking/002.spoke_vpc) and [`003.hub_vpc`](file:///modules/01.networking/003.hub_vpc)) instantiate this module and provision subnets, internet gateways, NAT gateways, and Transit Gateway attachments within it.
+This module does not create subnets or route tables directly; it acts as the parent container. Higher-level orchestration modules (such as [`002.spoke_vpc`](file:///modules/01.networking/002.spoke_vpc) and [`004.hub_vpc`](file:///modules/01.networking/004.hub_vpc)) instantiate this module and provision subnets, internet gateways, NAT gateways, and Transit Gateway attachments within it.
 
 ---
 
@@ -54,10 +54,10 @@ flowchart TD
     classDef comp fill:#1E88E5,stroke:#0D47A1,stroke-width:2px,color:#FFFFFF;
     classDef consumer fill:#ECEFF1,stroke:#455A64,stroke-width:1.5px,color:#263238;
 
-    SpokeModule["Spoke VPC Module (002.spoke_vpc)"]:::consumer
-    HubModule["Hub VPC Module (003.hub_vpc)"]:::consumer
-    BaseVPC["Base VPC Primitive (001.generic_vpc)"]:::comp
-    AWSVPC["AWS EC2 / VPC Service"]:::comp
+    SpokeModule["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/network/vpc.png' width='28' height='28' style='width:28px;height:28px;max-width:28px;max-height:28px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>Spoke VPC Module</b><br/>(002.spoke_vpc)"]:::consumer
+    HubModule["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/network/vpc.png' width='28' height='28' style='width:28px;height:28px;max-width:28px;max-height:28px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>Hub VPC Module</b><br/>(004.hub_vpc)"]:::consumer
+    BaseVPC["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/network/vpc.png' width='36' height='36' style='width:36px;height:36px;max-width:36px;max-height:36px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>Base VPC Primitive</b><br/>(001.generic_vpc)"]:::comp
+    AWSVPC["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/general/general.png' width='36' height='36' style='width:36px;height:36px;max-width:36px;max-height:36px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>AWS VPC Service</b>"]:::comp
 
     SpokeModule -->|"Instantiates with Spoke CIDR"| BaseVPC
     HubModule -->|"Instantiates with Hub CIDR"| BaseVPC
@@ -73,7 +73,7 @@ graph TD
     classDef out fill:#E8F5E9,stroke:#2E7D32,stroke-width:1.5px,color:#1B5E20;
 
     Inputs["Inputs: cidr_block, name_prefix, name_postfix, tags"]:::root
-    VpcResource["aws_vpc.this<br/>enable_dns_hostnames: true<br/>enable_dns_support: true"]:::res
+    VpcResource["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/network/vpc.png' width='28' height='28' style='width:28px;height:28px;max-width:28px;max-height:28px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>aws_vpc.this</b><br/>enable_dns_hostnames: true<br/>enable_dns_support: true"]:::res
     OutputVpcId["Output: vpc_id"]:::out
 
     Inputs --> VpcResource
@@ -88,7 +88,7 @@ This is a foundational leaf module. It does not invoke any submodules.
 
 - **Consumers**:
   - [`002.spoke_vpc`](file:///modules/01.networking/002.spoke_vpc) - Uses this module to provision the customer-managed Databricks compute VPC.
-  - [`003.hub_vpc`](file:///modules/01.networking/003.hub_vpc) - Uses this module to provision the central inspection Hub VPC.
+  - [`004.hub_vpc`](file:///modules/01.networking/004.hub_vpc) - Uses this module to provision the central inspection Hub VPC.
 
 ---
 
@@ -119,10 +119,10 @@ This is a foundational leaf module. It does not invoke any submodules.
 ### 7.1 Authoritative Documentation
 - [Amazon VPC Official Documentation](https://docs.aws.amazon.com/vpc/latest/userguide/what-is-amazon-vpc.html) - AWS VPC user guide.
 - [Databricks Customer-Managed VPC Guide](https://docs.databricks.com/aws/en/administration-guide/cloud-configurations/aws/customer-managed-vpc) - Required VPC configurations for Databricks compute.
-- [Terraform AWS VPC Resource](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/vpc) - Terraform provider documentation for `aws_vpc`.
+- [Terraform AWS VPC Resource](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/vpc) - Terraform provider documentation for `aws_vpc` .
 
 ### 7.2 Internal References
 - [Terraform Contract (`TERRAFORM.md`)](./TERRAFORM.md)
 - [Customer-Managed Spoke VPC (`002.spoke_vpc`)](file:///modules/01.networking/002.spoke_vpc)
-- [Inspection Hub VPC (`003.hub_vpc`)](file:///modules/01.networking/003.hub_vpc)
+- [Inspection Hub VPC (`004.hub_vpc`)](file:///modules/01.networking/004.hub_vpc)
 - [Authoritative README Template](file:///.ai/README_TEMPLATE.md)

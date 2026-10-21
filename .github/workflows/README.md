@@ -34,10 +34,10 @@ flowchart TD
     classDef finish fill:#E8F5E9,stroke:#2E7D32,stroke-width:1.5px,color:#1B5E20;
 
     Trigger["Push (All Commits) / PR (main) / Dispatch"]:::trigger
-    Stage1["Step 1: dpl-01-precommit.yml (Formatting, TFLint, Trivy, Checkov)"]:::stage
-    Stage2["Step 2: dpl-02-plan.yml (Init, Validate, Plan, Artifact Upload)"]:::stage
-    Gate["GitHub Environment Approval Gate (dev)"]:::gate
-    Stage3["Step 3: dpl-03-apply.yml (Artifact Download, Terraform Apply)"]:::stage
+    Stage1["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/security/shield.png' width='32' height='32' style='width:32px;height:32px;max-width:32px;max-height:32px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>Step 1: dpl-01-precommit.yml (Formatting, TFLint, Trivy, Checkov)</b>"]:::stage
+    Stage2["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/general/general.png' width='32' height='32' style='width:32px;height:32px;max-width:32px;max-height:32px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>Step 2: dpl-02-plan.yml (Init, Validate, Plan, Artifact Upload)</b>"]:::stage
+    Gate["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/general/users.png' width='32' height='32' style='width:32px;height:32px;max-width:32px;max-height:32px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>GitHub Environment Approval Gate (dev)</b>"]:::gate
+    Stage3["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/general/general.png' width='32' height='32' style='width:32px;height:32px;max-width:32px;max-height:32px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>Step 3: dpl-03-apply.yml (Artifact Download, Terraform Apply)</b>"]:::stage
     Done["Deployment Complete"]:::finish
 
     Trigger --> Stage1
@@ -86,10 +86,10 @@ graph TD
     classDef root fill:#ECEFF1,stroke:#37474F,stroke-width:2px,color:#212121;
     classDef subwf fill:#E8F5E9,stroke:#2E7D32,stroke-width:1.5px,color:#1B5E20;
 
-    DeployDev["deploy-dev.yml (Root Orchestrator)"]:::root
-    Precommit["dpl-01-precommit.yml (Quality & Security)"]:::subwf
-    Plan["dpl-02-plan.yml (Validate & Plan)"]:::subwf
-    Apply["dpl-03-apply.yml (Target Apply)"]:::subwf
+    DeployDev["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/general/general.png' width='32' height='32' style='width:32px;height:32px;max-width:32px;max-height:32px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>deploy-dev.yml (Root Orchestrator)</b>"]:::root
+    Precommit["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/security/shield.png' width='28' height='28' style='width:28px;height:28px;max-width:28px;max-height:28px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>dpl-01-precommit.yml (Quality & Security)</b>"]:::subwf
+    Plan["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/general/general.png' width='28' height='28' style='width:28px;height:28px;max-width:28px;max-height:28px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>dpl-02-plan.yml (Validate & Plan)</b>"]:::subwf
+    Apply["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/general/general.png' width='28' height='28' style='width:28px;height:28px;max-width:28px;max-height:28px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>dpl-03-apply.yml (Target Apply)</b>"]:::subwf
 
     DeployDev -->|"uses (job: precommit)"| Precommit
     DeployDev -->|"uses (job: plan, needs: precommit)"| Plan
@@ -154,3 +154,4 @@ To execute the pipelines successfully, the following repository secrets and vari
 - [Terraform Plan Workflow](file:///.github/workflows/dpl-02-plan.yml)
 - [Terraform Apply Workflow](file:///.github/workflows/dpl-03-apply.yml)
 - [Project Instructions & Source of Truth](file:///.ai/instructions.md)
+- [GitHub Copilot Custom Instructions](file:///.github/copilot-instructions.md)

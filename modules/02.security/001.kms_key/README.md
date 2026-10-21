@@ -40,10 +40,7 @@
 ### 3.1 Resource Architecture & Attributes
 
 | Resource Type | Resource Identifier | Configuration Attributes | Security Role |
-|:---|:---|:---|:---|
-| `aws_kms_key` | `this` | `enable_key_rotation = true`<br/>`deletion_window_in_days = 30`<br/>`prevent_destroy = true` | Root cryptographic key |
-| `aws_kms_key_policy` | `this` | Root account + Caller ARN policy delegation | Access control boundary |
-| `aws_kms_alias` | `this` | `alias/${kms_key_alias}-${environment}` | Human-readable key reference |
+|:---|:---|:---|:---|\n| `aws_kms_key` | `this` | `enable_key_rotation = true`<br/>`deletion_window_in_days = 30`<br/>`prevent_destroy = true` | Root cryptographic key |\n| `aws_kms_key_policy` | `this` | Root account + Caller ARN policy delegation | Access control boundary |\n| `aws_kms_alias` | `this` | `alias/${kms_key_alias}-${environment}` | Human-readable key reference |
 
 ---
 
@@ -58,10 +55,10 @@ graph TD
     classDef out fill:#E8F5E9,stroke:#2E7D32,stroke-width:1.5px,color:#1B5E20;
 
     Inputs["Inputs: kms_key_alias, kms_key_description, environment"]:::input
-    CallerData["data.aws_caller_identity.current"]:::res
-    KmsKey["aws_kms_key.this (enable_key_rotation: true)"]:::res
-    KmsPolicy["aws_kms_key_policy.this (Root + Caller ARN)"]:::res
-    KmsAlias["aws_kms_alias.this (alias/...)"]:::res
+    CallerData["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/general/users.png' width='28' height='28' style='width:28px;height:28px;max-width:28px;max-height:28px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>data.aws_caller_identity.current</b>"]:::res
+    KmsKey["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/security/key-management-service.png' width='32' height='32' style='width:32px;height:32px;max-width:32px;max-height:32px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>aws_kms_key.this (enable_key_rotation: true)</b>"]:::res
+    KmsPolicy["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/security/key-management-service.png' width='28' height='28' style='width:28px;height:28px;max-width:28px;max-height:28px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>aws_kms_key_policy.this (Root + Caller ARN)</b>"]:::res
+    KmsAlias["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/security/key-management-service.png' width='28' height='28' style='width:28px;height:28px;max-width:28px;max-height:28px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>aws_kms_alias.this (alias/...)</b>"]:::res
     OutputArn["Output: kms_arn"]:::out
 
     Inputs --> KmsKey

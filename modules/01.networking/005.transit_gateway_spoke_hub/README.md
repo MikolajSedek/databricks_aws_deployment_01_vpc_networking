@@ -1,4 +1,4 @@
-# Spoke-Hub AWS Transit Gateway Module (`004.transit_gateway_spoke_hub`)
+# Spoke-Hub AWS Transit Gateway Module (`005.transit_gateway_spoke_hub`)
 
 [![Terraform](https://img.shields.io/badge/Terraform-%3E%3D1.5.0-623CE4?logo=terraform)](https://developer.hashicorp.com/terraform/docs)
 [![AWS Provider](https://img.shields.io/badge/AWS_Provider-6.66.0-FF9900?logo=amazon-aws)](https://registry.terraform.io/providers/hashicorp/aws/latest/docs)
@@ -62,16 +62,16 @@ flowchart LR
     classDef hubNode fill:#E8F5E9,stroke:#2E7D32,stroke-width:1.5px,color:#1B5E20;
 
     subgraph SpokeNet ["Spoke VPC"]
-        SpokeCompute["Databricks Compute Subnet"]
-        SpokeTGWSubnet["Spoke TGW Subnet"]
+        SpokeCompute["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/onprem/analytics/databricks.png' width='32' height='32' style='width:32px;height:32px;max-width:32px;max-height:32px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>Databricks Compute Subnet</b>"]
+        SpokeTGWSubnet["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/network/transit-gateway.png' width='28' height='28' style='width:28px;height:28px;max-width:28px;max-height:28px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>Spoke TGW Subnet</b>"]
     end
     class SpokeNet spokeNode;
 
-    TGW["AWS Transit Gateway (tgw)"]:::tgwNode
+    TGW["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/network/transit-gateway.png' width='36' height='36' style='width:36px;height:36px;max-width:36px;max-height:36px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>AWS Transit Gateway (tgw)</b>"]:::tgwNode
 
     subgraph HubNet ["Hub VPC"]
-        HubTGWSubnet["Hub TGW Subnet"]
-        HubNAT["NAT Public Subnet"]
+        HubTGWSubnet["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/network/transit-gateway.png' width='28' height='28' style='width:28px;height:28px;max-width:28px;max-height:28px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>Hub TGW Subnet</b>"]
+        HubNAT["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/network/nat-gateway.png' width='32' height='32' style='width:32px;height:32px;max-width:32px;max-height:32px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>NAT Public Subnet</b>"]
     end
     class HubNet hubNode;
 
@@ -88,14 +88,14 @@ graph TD
     classDef mod fill:#ECEFF1,stroke:#455A64,stroke-width:1.5px,color:#263238;
     classDef res fill:#E1F5FE,stroke:#0288D1,stroke-width:1.5px,color:#01579B;
 
-    RootTGW["module.spoke_hub_transit_gateway"]:::mod
-    TGWResource["aws_ec2_transit_gateway.tgw"]:::res
-    SpokeAttach["aws_ec2_transit_gateway_vpc_attachment.spoke"]:::res
-    HubAttach["aws_ec2_transit_gateway_vpc_attachment.hub"]:::res
-    TGWRoute["aws_ec2_transit_gateway_route.spoke_to_hub"]:::res
-    RouteSpoke["aws_route.spoke_db_to_tgw"]:::res
-    RouteHubTGW["aws_route.hub_tgw_private_subnet_to_tgw"]:::res
-    RouteHubNAT["aws_route.hub_nat_to_tgw"]:::res
+    RootTGW["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/network/transit-gateway.png' width='32' height='32' style='width:32px;height:32px;max-width:32px;max-height:32px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>module.spoke_hub_transit_gateway</b>"]:::mod
+    TGWResource["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/network/transit-gateway.png' width='32' height='32' style='width:32px;height:32px;max-width:32px;max-height:32px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>aws_ec2_transit_gateway.tgw</b>"]:::res
+    SpokeAttach["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/network/transit-gateway.png' width='28' height='28' style='width:28px;height:28px;max-width:28px;max-height:28px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>aws_ec2_transit_gateway_vpc_attachment.spoke</b>"]:::res
+    HubAttach["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/network/transit-gateway.png' width='28' height='28' style='width:28px;height:28px;max-width:28px;max-height:28px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>aws_ec2_transit_gateway_vpc_attachment.hub</b>"]:::res
+    TGWRoute["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/network/transit-gateway.png' width='28' height='28' style='width:28px;height:28px;max-width:28px;max-height:28px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>aws_ec2_transit_gateway_route.spoke_to_hub</b>"]:::res
+    RouteSpoke["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/network/vpc.png' width='28' height='28' style='width:28px;height:28px;max-width:28px;max-height:28px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>aws_route.spoke_db_to_tgw</b>"]:::res
+    RouteHubTGW["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/network/vpc.png' width='28' height='28' style='width:28px;height:28px;max-width:28px;max-height:28px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>aws_route.hub_tgw_private_subnet_to_tgw</b>"]:::res
+    RouteHubNAT["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/network/vpc.png' width='28' height='28' style='width:28px;height:28px;max-width:28px;max-height:28px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>aws_route.hub_nat_to_tgw</b>"]:::res
 
     RootTGW --> TGWResource
     RootTGW --> SpokeAttach
@@ -114,7 +114,7 @@ graph TD
 
 ## 5. All Modules Used with Short Summaries
 
-This module does not instantiate external submodules. It provisions native AWS EC2 Transit Gateway resources and injects routes into route tables created by [`002.spoke_vpc`](file:///modules/01.networking/002.spoke_vpc) and [`003.hub_vpc`](file:///modules/01.networking/003.hub_vpc).
+This module does not instantiate external submodules. It provisions native AWS EC2 Transit Gateway resources and injects routes into route tables created by [`002.spoke_vpc`](file:///modules/01.networking/002.spoke_vpc) and [`004.hub_vpc`](file:///modules/01.networking/004.hub_vpc).
 
 ---
 
@@ -153,5 +153,5 @@ This module does not export outputs.
 ### 7.2 Internal References
 - [Terraform Contract (`TERRAFORM.md`)](./TERRAFORM.md)
 - [Spoke VPC Module (`002.spoke_vpc`)](file:///modules/01.networking/002.spoke_vpc)
-- [Hub VPC Module (`003.hub_vpc`)](file:///modules/01.networking/003.hub_vpc)
+- [Hub VPC Module (`004.hub_vpc`)](file:///modules/01.networking/004.hub_vpc)
 - [Authoritative README Template](file:///.ai/README_TEMPLATE.md)
