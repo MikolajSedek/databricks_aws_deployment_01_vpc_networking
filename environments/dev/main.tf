@@ -2,12 +2,16 @@
   Databricks Hub-and-Spoke Infrastructure Orchestration - Dev Environment
   Documentation:
     - https://docs.databricks.com/en/security/network/classic/customer-managed-vpc.html
+    - https://docs.databricks.com/aws/en/security/network/classic/privatelink
+    - https://registry.terraform.io/providers/databricks/databricks/latest/docs/guides/aws-private-link-workspace
     - https://docs.aws.amazon.com/whitepapers/latest/building-scalable-secure-multi-vpc-network-infrastructure/aws-transit-gateway.html
     - https://docs.aws.amazon.com/network-firewall/latest/developerguide/arch-centralized-symmetric.html
 
   Root module orchestrating the end-to-end networking stack for Databricks in AWS:
     - Security & Backend Storage: Customer Managed KMS key and S3 state backend bucket.
     - Spoke VPC: Private compute subnets for Databricks clusters and VPC endpoints (S3, STS, Kinesis).
+    - Spoke PrivateLink: Dedicated subnets, local route table, security group, and VPC endpoints for
+      Databricks Control Plane private connectivity (Workspace REST API and SCC Relay).
     - Hub VPC: Centralized egress VPC with public NAT Gateways, Internet Gateway, and inspection subnets.
     - AWS Transit Gateway: Interconnects Spoke and Hub VPCs with centralized routing.
     - AWS Network Firewall: Stateful traffic inspection and FQDN filtering for outbound traffic.
@@ -48,10 +52,24 @@ module "spoke_vpc" {
   tags                           = local.spoke_vpc_tags
 }
 
+// SPOKE PrivateLink deployment for Databricks Control Plane private connectivity
+module "spoke_privatelink" {
+  source                        = "../../modules/01.networking/003.spoke_privatelink"
+  availability_zones            = local.availability_zones
+  env                           = local.env
+  relay_vpce_service            = local.db_resources_map.relay_vpce_service
+  sg_egress_ports               = local.sg_egress_ports
+  spoke_db_private_subnets_cidr = local.spoke_db_private_subnets_cidr
+  spoke_vpc_id                  = module.spoke_vpc.spoke_vpc_id
+  spoke_vpce_subnets_cidr       = local.spoke_vpce_subnets_cidr
+  tags                          = local.spoke_privatelink_tags
+  workspace_vpce_service        = local.db_resources_map.workspace_vpce_service
+}
+
 // HUB VPC deployment
 // Note: in this demo project it's currently HA with single AZs for subnets
 module "hub_vpc" {
-  source                       = "../../modules/01.networking/003.hub_vpc"
+  source                       = "../../modules/01.networking/004.hub_vpc"
   availability_zones           = local.availability_zones
   env                          = local.env
   hub_cidr_block               = local.hub_cidr_block
@@ -65,7 +83,7 @@ module "hub_vpc" {
 // DEPENDS ON: Spoke and Hub VPCs
 
 module "spoke_hub_transit_gateway" {
-  source                 = "../../modules/01.networking/004.transit_gateway_spoke_hub"
+  source                 = "../../modules/01.networking/005.transit_gateway_spoke_hub"
   env                    = local.env
   hub_nat_public_rt_id   = module.hub_vpc.hub_nat_public_rt_id
   hub_tgw_private_rt_id  = module.hub_vpc.hub_tgw_private_rt_id
@@ -80,7 +98,7 @@ module "spoke_hub_transit_gateway" {
 
 // Hub Networking Anti-Exfiltration Firewall deployment
 module "hub_vpc_network_firewall" {
-  source                      = "../../modules/01.networking/005.hub_networking_firewall"
+  source                      = "../../modules/01.networking/006.hub_networking_firewall"
   db_resources_map            = local.db_resources_map
   env                         = local.env
   hub_cidr_block              = local.hub_cidr_block

@@ -60,12 +60,12 @@ graph TD
     classDef sec fill:#FFF8E1,stroke:#F57F17,stroke-width:1.5px,color:#E65100;
 
     Inputs["Inputs: bucket_name, environment, kms_key_arn"]:::input
-    S3Bucket["aws_s3_bucket.this"]:::s3
-    Versioning["aws_s3_bucket_versioning (Enabled)"]:::s3
-    Lifecycle["aws_s3_bucket_lifecycle_configuration (90d noncurrent)"]:::s3
-    Encryption["aws_s3_bucket_server_side_encryption_configuration (SSE-KMS)"]:::sec
-    PublicBlock["aws_s3_bucket_public_access_block (100% Blocked)"]:::sec
-    Ownership["aws_s3_bucket_ownership_controls (BucketOwnerEnforced)"]:::sec
+    S3Bucket["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/storage/simple-storage-service-s3.png' width='32' height='32' style='width:32px;height:32px;max-width:32px;max-height:32px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>aws_s3_bucket.this</b>"]:::s3
+    Versioning["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/storage/simple-storage-service-s3.png' width='28' height='28' style='width:28px;height:28px;max-width:28px;max-height:28px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>aws_s3_bucket_versioning (Enabled)</b>"]:::s3
+    Lifecycle["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/storage/simple-storage-service-s3.png' width='28' height='28' style='width:28px;height:28px;max-width:28px;max-height:28px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>aws_s3_bucket_lifecycle_configuration (90d noncurrent)</b>"]:::s3
+    Encryption["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/security/key-management-service.png' width='28' height='28' style='width:28px;height:28px;max-width:28px;max-height:28px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>aws_s3_bucket_server_side_encryption_configuration (SSE-KMS)</b>"]:::sec
+    PublicBlock["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/security/shield.png' width='28' height='28' style='width:28px;height:28px;max-width:28px;max-height:28px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>aws_s3_bucket_public_access_block (100% Blocked)</b>"]:::sec
+    Ownership["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/security/shield.png' width='28' height='28' style='width:28px;height:28px;max-width:28px;max-height:28px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>aws_s3_bucket_ownership_controls (BucketOwnerEnforced)</b>"]:::sec
 
     Inputs --> S3Bucket
     S3Bucket --> Versioning
@@ -90,13 +90,7 @@ This module does not invoke external submodules. It provisions native Amazon S3 
 
 ### 6.1 Essential Inputs Summary
 
-| Variable | Type | Description | Required |
-|:---|:---:|:---|:---:|
-| `bucket_name` | `string` | Base name for the S3 backend bucket | Yes |
-| `environment` | `string` | Environment qualifier (e.g. `dev`) | Yes |
-| `kms_key_arn` | `string` | Customer Managed Key ARN for state encryption | Yes |
-| `force_destroy` | `bool` | Permit bucket deletion when non-empty (default: `false`) | No |
-| `tags` | `map(string)` | Resource tags for the bucket | No |
+| Variable | Type | Description | Required |\n|:---|:---:|:---|:---:|\n| `bucket_name` | `string` | Base name for the S3 backend bucket | Yes |\n| `environment` | `string` | Environment qualifier (e.g. `dev`) | Yes |\n| `kms_key_arn` | `string` | Customer Managed Key ARN for state encryption | Yes |\n| `force_destroy` | `bool` | Permit bucket deletion when non-empty (default: `false`) | No |\n| `tags` | `map(string)` | Resource tags for the bucket | No |
 
 ### 6.2 Essential Outputs Summary
 

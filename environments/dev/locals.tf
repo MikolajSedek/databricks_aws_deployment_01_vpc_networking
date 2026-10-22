@@ -4,11 +4,13 @@
     - https://developer.hashicorp.com/terraform/language/values/locals
     - https://docs.databricks.com/en/security/network/classic/customer-managed-vpc.html
     - https://docs.databricks.com/en/security/network/firewall-rules.html
+    - https://docs.databricks.com/aws/en/security/network/classic/privatelink
+    - https://registry.terraform.io/providers/databricks/databricks/latest/docs/guides/aws-private-link-workspace
 
   Defines reusable local values and calculations for the dev environment:
     - Project, environment, and backend bucket naming conventions.
-    - Regional Databricks endpoints map (web app, SCC relay tunnel, RDS Hive metastore, control plane CIDR).
-    - CIDR subnet calculations for Spoke VPC compute and TGW attachment subnets.
+    - Regional Databricks endpoints map (web app, SCC relay tunnel, RDS Hive metastore, control plane CIDR, PrivateLink services).
+    - CIDR subnet calculations for Spoke VPC compute, TGW attachment, and PrivateLink VPC endpoint subnets.
     - CIDR subnet calculations for Hub VPC TGW, NAT, and Network Firewall inspection subnets.
     - Security group port rules and egress firewall URL allowlists.
 */
@@ -32,10 +34,12 @@ locals {
 
   /* Databricks Regional resources map */
   db_resources_map = {
-    web_app       = "frankfurt.cloud.databricks.com"
-    tunnel        = "tunnel.eu-central-1.cloud.databricks.com"
-    rds           = "mdv2llxgl8lou0.ceptxxgorjrc.eu-central-1.rds.amazonaws.com"
-    control_plane = "18.159.44.32/28"
+    web_app                = "frankfurt.cloud.databricks.com"
+    tunnel                 = "tunnel.eu-central-1.cloud.databricks.com"
+    rds                    = "mdv2llxgl8lou0.ceptxxgorjrc.eu-central-1.rds.amazonaws.com"
+    control_plane          = "18.159.44.32/28"
+    workspace_vpce_service = "com.amazonaws.vpce.eu-central-1.vpce-svc-081f78503812597f7"
+    relay_vpce_service     = "com.amazonaws.vpce.eu-central-1.vpce-svc-08e5dfca9572c85c4"
   }
 
   /* networking setup
@@ -46,6 +50,7 @@ locals {
 
   spoke_db_private_subnets_cidr  = [cidrsubnet(local.spoke_cidr_block, 3, 0), cidrsubnet(local.spoke_cidr_block, 3, 1)]
   spoke_tgw_private_subnets_cidr = [cidrsubnet(local.spoke_cidr_block, 3, 2), cidrsubnet(local.spoke_cidr_block, 3, 3)]
+  spoke_vpce_subnets_cidr        = [cidrsubnet(local.spoke_cidr_block, 3, 4), cidrsubnet(local.spoke_cidr_block, 3, 5)]
   hub_tgw_private_subnets_cidr   = [cidrsubnet(local.hub_cidr_block, 3, 0)]
   hub_nat_public_subnets_cidr    = [cidrsubnet(local.hub_cidr_block, 3, 1)]
   hub_firewall_subnets_cidr      = [cidrsubnet(local.hub_cidr_block, 3, 2)]
@@ -65,6 +70,10 @@ locals {
 
   spoke_vpc_tags = {
     ResourceGroup = "Spoke VPC for ${local.env} environment"
+  }
+
+  spoke_privatelink_tags = {
+    ResourceGroup = "Spoke PrivateLink for ${local.env} environment"
   }
 
   hub_vpc_tags = {

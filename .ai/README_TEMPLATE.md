@@ -1,6 +1,6 @@
 # Authoritative README Template for Modules and Environments
 
-> **Template Version**: 1.1.0
+> **Template Version**: 1.2.0
 > **Location**: `.ai/README_TEMPLATE.md`
 > **Usage Instructions**:
 > Every environment (under `environments/<env>/README.md`) and reusable module (under `modules/<category>/<module_name>/README.md`) **must** adhere strictly to this template structure. Replace placeholder bracketed text `[like this]` with component-specific details. Maintain all section headers and alert styles. Ensure all hyperlinks are verified and active (HTTP 200). Ensure all Mermaid diagrams are syntactically valid and tested before committing.
@@ -83,13 +83,17 @@
 ## 4. Architecture C4 Visualisation
 
 > [!IMPORTANT]
-> **Mermaid Syntax Validation Rule**:
-> All Mermaid diagrams **must be parsed and validated** for syntax correctness whenever created or updated (e.g., using `mmdc` / `@mermaid-js/mermaid-cli`).
-> Follow these strict formatting rules:
-> - **Subgraphs**: Never attach class definitions directly onto `subgraph` declaration lines (e.g., `subgraph Id[...]:::className` is invalid syntax). Declare `subgraph Id ["Title"]` and apply styling after the block using `class Id className;` or `style Id ...`.
-> - **Node Labels**: Always enclose node labels in double quotes (e.g., `id["Label (Details)"]`) especially when containing parentheses, brackets, colons, slashes, or hyphens.
-> - **No HTML in Labels**: Avoid HTML tags such as `<br/>` in node labels; use standard newlines or concise text descriptions.
-> - **Diagram Types**: Use supported diagram headers (`flowchart TD`, `flowchart LR`, `graph TD`). Subgraph IDs must be valid alphanumeric identifiers without spaces.
+> **Mermaid Syntax & Icon Formatting Rules**:
+> All Mermaid diagrams **must be parsed and validated** for syntax correctness whenever created or updated.
+> - **Subgraphs**: Never attach class definitions directly onto `subgraph` declaration lines (e.g., `subgraph Id[...]:::className` is invalid syntax). Declare `subgraph Id ["Title"]` and apply styling after the block using `class Id className;`.
+> - **Node Labels & Quoting**: Always enclose node labels in explicit double quotes: `id["..."]`.
+> - **Official Icon Standards**: Embed official AWS and Databricks architecture icons in node labels using the anti-flattening template:
+>   `<img src='<URL>' width='<SIZE>' height='<SIZE>' style='width:<SIZE>px;height:<SIZE>px;max-width:<SIZE>px;max-height:<SIZE>px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>Title</b>`
+> - **Size Hierarchy**:
+>   - Primary systems/actors/clusters: `36px` (`width='36' height='36'`)
+>   - Gateways/endpoints/firewalls: `32px` (`width='32' height='32'`)
+>   - Subnets/module inventory components: `28px` (`width='28' height='28'`)
+> - **Icon CDN Source**: Use verified assets from `https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/` (see [`.ai/instructions.md`](file:///.ai/instructions.md) for full directory).
 
 ### 4.1 Level 1: System Context Diagram
 [Illustrates how the module or environment fits into the larger ecosystem, including users, Databricks Control Plane, and external services.]
@@ -100,13 +104,13 @@ flowchart TD
     classDef system fill:#1E88E5,stroke:#0D47A1,stroke-width:2px,color:#FFFFFF;
     classDef external fill:#546E7A,stroke:#263238,stroke-width:2px,color:#FFFFFF;
 
-    User["Databricks Users & Data Engineers"]:::actor
-    DatabricksCP["Databricks Control Plane (E2 SaaS)"]:::external
-    AWSServices["AWS Native Services (S3, STS, KMS)"]:::external
-    PublicInternet["Public Repositories & Internet"]:::external
+    User["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/general/users.png' width='36' height='36' style='width:36px;height:36px;max-width:36px;max-height:36px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>Databricks Users</b><br/>(Data Engineers)"]:::actor
+    DatabricksCP["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/onprem/analytics/databricks.png' width='36' height='36' style='width:36px;height:36px;max-width:36px;max-height:36px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>Databricks Control Plane</b><br/>(E2 SaaS)"]:::external
+    AWSServices["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/general/general.png' width='36' height='36' style='width:36px;height:36px;max-width:36px;max-height:36px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>AWS Native Services</b><br/>(S3, STS, KMS)"]:::external
+    PublicInternet["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/general/internet-alt1.png' width='36' height='36' style='width:36px;height:36px;max-width:36px;max-height:36px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>Public Repositories</b><br/>(PyPI, CRAN)"]:::external
 
     subgraph AWSAccount ["AWS Account: [Account ID / Environment]"]
-        EnvironmentRoot["[This Module / Environment Architecture]"]:::system
+        EnvironmentRoot["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/network/vpc.png' width='36' height='36' style='width:36px;height:36px;max-width:36px;max-height:36px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>[This Module / Architecture Stack]</b>"]:::system
     end
 
     User -->|"Workspaces & Notebooks (HTTPS/443)"| DatabricksCP
@@ -126,19 +130,19 @@ flowchart LR
     classDef transit fill:#EDE7F6,stroke:#512DA8,stroke-width:2px,color:#311B92;
 
     subgraph HubVPC ["Hub VPC (Inspection & Egress)"]
-        IGW["Internet Gateway"]
-        NAT["NAT Gateways (Multi-AZ)"]
-        NFW["AWS Network Firewall Endpoints"]:::security
-        HubTGWSubnet["Hub TGW Attachment Subnets"]
+        IGW["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/network/internet-gateway.png' width='32' height='32' style='width:32px;height:32px;max-width:32px;max-height:32px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>Internet Gateway</b>"]
+        NAT["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/network/nat-gateway.png' width='32' height='32' style='width:32px;height:32px;max-width:32px;max-height:32px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>NAT Gateways</b><br/>(Multi-AZ)"]
+        NFW["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/security/shield.png' width='32' height='32' style='width:32px;height:32px;max-width:32px;max-height:32px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>AWS Network Firewall</b>"]:::security
+        HubTGWSubnet["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/network/endpoint.png' width='28' height='28' style='width:28px;height:28px;max-width:28px;max-height:28px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>Hub TGW Subnets</b>"]
     end
     class HubVPC hubVpc;
 
-    TGW["AWS Transit Gateway"]:::transit
+    TGW["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/network/transit-gateway.png' width='36' height='36' style='width:36px;height:36px;max-width:36px;max-height:36px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>AWS Transit Gateway</b>"]:::transit
 
     subgraph SpokeVPC ["Spoke VPC (Databricks Workspace Data Plane)"]
-        SpokeTGWSubnet["Spoke TGW Attachment Subnets"]
-        ComputeSubnets["Databricks Private Compute Subnets (Multi-AZ)"]
-        WorkspaceClusters["Databricks Spark Clusters / Workers"]
+        SpokeTGWSubnet["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/network/endpoint.png' width='28' height='28' style='width:28px;height:28px;max-width:28px;max-height:28px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>Spoke TGW Subnets</b>"]
+        ComputeSubnets["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/network/vpc.png' width='28' height='28' style='width:28px;height:28px;max-width:28px;max-height:28px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>Compute Subnets</b>"]
+        WorkspaceClusters["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/onprem/analytics/databricks.png' width='36' height='36' style='width:36px;height:36px;max-width:36px;max-height:36px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>Databricks Clusters</b>"]
     end
     class SpokeVPC spokeVpc;
 
@@ -149,7 +153,7 @@ flowchart LR
     HubTGWSubnet --> NFW
     NFW --> NAT
     NAT --> IGW
-    IGW -->|"Egress to Internet"| Internet((Public Internet))
+    IGW -->|"Egress"| Internet["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/general/internet-alt1.png' width='32' height='32' style='width:32px;height:32px;max-width:32px;max-height:32px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>Public Internet</b>"]
 ```
 
 ### 4.3 Level 3: Component Diagram (Terraform Resource Orchestration)
@@ -160,12 +164,12 @@ graph TD
     classDef moduleNode fill:#ECEFF1,stroke:#455A64,stroke-width:1.5px,color:#263238;
     classDef resourceNode fill:#E1F5FE,stroke:#0288D1,stroke-width:1.5px,color:#01579B;
 
-    RootConfig["Root Environment / Module Configuration"]:::moduleNode
-    SubmoduleA["[Submodule 1: e.g., KMS Key]"]:::moduleNode
-    SubmoduleB["[Submodule 2: e.g., Hub VPC]"]:::moduleNode
-    SubmoduleC["[Submodule 3: e.g., Spoke VPC]"]:::moduleNode
-    SubmoduleD["[Submodule 4: e.g., Transit Gateway]"]:::moduleNode
-    SubmoduleE["[Submodule 5: e.g., Network Firewall]"]:::moduleNode
+    RootConfig["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/general/general.png' width='28' height='28' style='width:28px;height:28px;max-width:28px;max-height:28px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>Root Configuration</b>"]:::moduleNode
+    SubmoduleA["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/security/key-management-service.png' width='28' height='28' style='width:28px;height:28px;max-width:28px;max-height:28px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>[Submodule 1: e.g., KMS Key]</b>"]:::moduleNode
+    SubmoduleB["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/network/vpc.png' width='28' height='28' style='width:28px;height:28px;max-width:28px;max-height:28px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>[Submodule 2: e.g., Hub VPC]</b>"]:::moduleNode
+    SubmoduleC["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/network/vpc.png' width='28' height='28' style='width:28px;height:28px;max-width:28px;max-height:28px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>[Submodule 3: e.g., Spoke VPC]</b>"]:::moduleNode
+    SubmoduleD["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/network/transit-gateway.png' width='28' height='28' style='width:28px;height:28px;max-width:28px;max-height:28px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>[Submodule 4: e.g., Transit Gateway]</b>"]:::moduleNode
+    SubmoduleE["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/security/shield.png' width='28' height='28' style='width:28px;height:28px;max-width:28px;max-height:28px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>[Submodule 5: e.g., Network Firewall]</b>"]:::moduleNode
 
     RootConfig --> SubmoduleA
     RootConfig --> SubmoduleB
@@ -191,10 +195,11 @@ graph TD
 | Module Name | Source Path | Version / Ref | Primary Role / Responsibility |
 |:---|:---|:---:|:---|
 | `[e.g., kms_key]` | `[../../modules/02.security/001.kms_key]` | `n/a` | Provisions multi-region KMS CMKs for S3, state, and firewall log encryption. |
-| `[e.g., hub_vpc]` | `[../../modules/01.networking/003.hub_vpc]` | `n/a` | Deploys inspection VPC with IGW, NAT GWs, routing tables, and firewall subnets. |
 | `[e.g., spoke_vpc]` | `[../../modules/01.networking/002.spoke_vpc]` | `n/a` | Deploys customer-managed VPC for Databricks compute with private-only subnets. |
-| `[e.g., spoke_hub_transit_gateway]` | `[../../modules/01.networking/004.spoke_hub_tgw]` | `n/a` | Manages central Transit Gateway, route tables, associations, and VPC attachments. |
-| `[e.g., hub_vpc_network_firewall]` | `[../../modules/01.networking/005.networking_firewall]` | `n/a` | Configures AWS Network Firewall with stateful SNI allowlists and logging. |
+| `[e.g., spoke_privatelink]` | `[../../modules/01.networking/003.spoke_privatelink]` | `n/a` | Provisions Databricks Control Plane PrivateLink VPC endpoints, subnets, and security groups. |
+| `[e.g., hub_vpc]` | `[../../modules/01.networking/004.hub_vpc]` | `n/a` | Deploys inspection VPC with IGW, NAT GWs, routing tables, and firewall subnets. |
+| `[e.g., spoke_hub_transit_gateway]` | `[../../modules/01.networking/005.transit_gateway_spoke_hub]` | `n/a` | Manages central Transit Gateway, route tables, associations, and VPC attachments. |
+| `[e.g., hub_vpc_network_firewall]` | `[../../modules/01.networking/006.hub_networking_firewall]` | `n/a` | Configures AWS Network Firewall with stateful SNI allowlists and logging. |
 | `[e.g., backend_bucket]` | `[../../modules/03.storage/001.env_backend_bucket]` | `n/a` | Provisions encrypted, versioned S3 bucket and DynamoDB table for state locking. |
 
 ### 5.2 Deep-Dive Module Descriptions

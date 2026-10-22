@@ -1,4 +1,4 @@
-# 005.hub_networking_firewall
+# 006.hub_networking_firewall
 
 <!-- BEGIN_TF_DOCS -->
 ## Requirements

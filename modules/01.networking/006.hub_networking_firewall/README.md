@@ -1,4 +1,4 @@
-# Hub AWS Network Firewall Module (`005.hub_networking_firewall`)
+# Hub AWS Network Firewall Module (`006.hub_networking_firewall`)
 
 [![Terraform](https://img.shields.io/badge/Terraform-%3E%3D1.5.0-623CE4?logo=terraform)](https://developer.hashicorp.com/terraform/docs)
 [![AWS Provider](https://img.shields.io/badge/AWS_Provider-6.66.0-FF9900?logo=amazon-aws)](https://registry.terraform.io/providers/hashicorp/aws/latest/docs)
@@ -23,14 +23,11 @@
 ## 2. General Logic & Operational Flow
 
 ### 2.1 Configuration & Provisioning Lifecycle
-1. **Rule Group Definitions** (in [`network_firewall_rule_groups.tf`](file:///modules/01.networking/005.hub_networking_firewall/network_firewall_rule_groups.tf)):
-   - `deny_protocols_rg`: Stateful rule group dropping blocked protocols (ICMP, FTP, SSH).
-   - `allow_db_cpl_protocols_rg`: Stateful rule group permitting outbound TCP communication between Spoke/Hub CIDRs and Databricks control plane endpoints.
-   - `databricks_fqdns_rg`: Stateful domain list rule group permitting HTTP/HTTPS egress only to allowlisted Databricks regional endpoints, external URLs (`whitelisted_urls`), and S3 storage buckets. In [`locals.tf`](file:///modules/01.networking/005.hub_networking_firewall/locals.tf), both generic S3 domains (`${bucket_name}.s3.amazonaws.com`) and regional S3 domains (`${bucket_name}.s3.${var.region}.amazonaws.com`) are computed dynamically from `var.whitelisted_bucket_names` and `var.region`.
-2. **Firewall Policy & Firewall Creation** (in [`main.tf`](file:///modules/01.networking/005.hub_networking_firewall/main.tf)):
+1. **Rule Group Definitions** (in [`network_firewall_rule_groups.tf`](file:///modules/01.networking/006.hub_networking_firewall/network_firewall_rule_groups.tf)):\n   - `deny_protocols_rg`: Stateful rule group dropping blocked protocols (ICMP, FTP, SSH).\n   - `allow_db_cpl_protocols_rg`: Stateful rule group permitting outbound TCP communication between Spoke/Hub CIDRs and Databricks control plane endpoints.\n   - `databricks_fqdns_rg`: Stateful domain list rule group permitting HTTP/HTTPS egress only to allowlisted Databricks regional endpoints, external URLs (`whitelisted_urls`), and S3 storage buckets. In [`locals.tf`](file:///modules/01.networking/006.hub_networking_firewall/locals.tf), both generic S3 domains (`${bucket_name}.s3.amazonaws.com`) and regional S3 domains (`${bucket_name}.s3.${var.region}.amazonaws.com`) are computed dynamically from `var.whitelisted_bucket_names` and `var.region`.
+2. **Firewall Policy & Firewall Creation** (in [`main.tf`](file:///modules/01.networking/006.hub_networking_firewall/main.tf)):
    - Provisions `aws_networkfirewall_firewall_policy.egress_policy`, associating the stateful rule groups in prioritized order.
    - Provisions `aws_networkfirewall_firewall.exfiltration_firewall` across the Hub VPC firewall subnets.
-3. **Endpoint Routing Interception** (in [`network_firewall_route_tables.tf`](file:///modules/01.networking/005.hub_networking_firewall/network_firewall_route_tables.tf)):
+3. **Endpoint Routing Interception** (in [`network_firewall_route_tables.tf`](file:///modules/01.networking/006.hub_networking_firewall/network_firewall_route_tables.tf)):
    - Reads the generated VPC endpoint via `data.aws_vpc_endpoint.firewall`.
    - Injects route in `hub_nat_public_rt` directing default egress (`0.0.0.0/0`) into the firewall endpoint.
    - Injects ingress routing in `hub_igw_rt` routing return traffic destined for `hub_nat_public_subnets_cidr` into the firewall endpoint.
@@ -46,7 +43,7 @@
 ### 3.1 Firewall Rule Groups & Priority
 
 | Rule Group | Type | Priority | Action | Target / Matching |
-|:---|:---:|:---:|:---:|:---|
+|:---|:---:|:---|:---:|:---|
 | `deny_protocols_rg` | Stateful (5-tuple) | `100` | `DROP` | Protocols: ICMP, FTP, SSH |
 | `allow_db_cpl_protocols_rg` | Stateful (5-tuple) | `200` | `PASS` | TCP traffic to Databricks Control Plane |
 | `databricks_fqdns_rg` | Stateful (Domain List) | `300` | `ALLOW` | SNI / HTTP Host allowlist (`whitelisted_urls`, Databricks URLs, generic and regional S3 URLs) |
@@ -69,10 +66,10 @@ flowchart LR
     classDef comp fill:#FFF3E0,stroke:#E65100,stroke-width:2px,color:#BF360C;
     classDef net fill:#E8F5E9,stroke:#2E7D32,stroke-width:1.5px,color:#1B5E20;
 
-    NAT["NAT Gateway (hub_nat)"]:::net
-    FW["AWS Network Firewall (exfiltration_firewall)"]:::comp
-    IGW["Internet Gateway (hub_igw)"]:::net
-    Web["Allowlisted URLs / Databricks SaaS"]:::net
+    NAT["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/network/nat-gateway.png' width='32' height='32' style='width:32px;height:32px;max-width:32px;max-height:32px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>NAT Gateway (hub_nat)</b>"]:::net
+    FW["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/security/shield.png' width='36' height='36' style='width:36px;height:36px;max-width:36px;max-height:36px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>AWS Network Firewall (exfiltration_firewall)</b>"]:::comp
+    IGW["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/network/internet-gateway.png' width='32' height='32' style='width:32px;height:32px;max-width:32px;max-height:32px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>Internet Gateway (hub_igw)</b>"]:::net
+    Web["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/general/internet-alt1.png' width='32' height='32' style='width:32px;height:32px;max-width:32px;max-height:32px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>Allowlisted URLs / Databricks SaaS</b>"]:::net
 
     NAT -->|"Outbound Egress (0.0.0.0/0)"| FW
     FW -->|"Inspected Outbound"| IGW
@@ -90,14 +87,14 @@ graph TD
     classDef policy fill:#FFF8E1,stroke:#F57F17,stroke-width:1.5px,color:#E65100;
     classDef res fill:#E1F5FE,stroke:#0288D1,stroke-width:1.5px,color:#01579B;
 
-    Root["module.hub_vpc_network_firewall"]:::mod
-    Firewall["aws_networkfirewall_firewall.exfiltration_firewall"]:::res
-    Policy["aws_networkfirewall_firewall_policy.egress_policy"]:::policy
-    RGDeny["aws_networkfirewall_rule_group.deny_protocols_rg"]:::policy
-    RGAllow["aws_networkfirewall_rule_group.allow_db_cpl_protocols_rg"]:::policy
-    RGFQDN["aws_networkfirewall_rule_group.databricks_fqdns_rg"]:::policy
-    RouteNAT["aws_route.db_nat_firewall"]:::res
-    RouteIGW["aws_route.db_igw_nat_firewall"]:::res
+    Root["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/security/shield.png' width='32' height='32' style='width:32px;height:32px;max-width:32px;max-height:32px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>module.hub_vpc_network_firewall</b>"]:::mod
+    Firewall["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/security/shield.png' width='32' height='32' style='width:32px;height:32px;max-width:32px;max-height:32px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>aws_networkfirewall_firewall.exfiltration_firewall</b>"]:::res
+    Policy["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/security/shield.png' width='28' height='28' style='width:28px;height:28px;max-width:28px;max-height:28px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>aws_networkfirewall_firewall_policy.egress_policy</b>"]:::policy
+    RGDeny["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/security/shield.png' width='28' height='28' style='width:28px;height:28px;max-width:28px;max-height:28px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>aws_networkfirewall_rule_group.deny_protocols_rg</b>"]:::policy
+    RGAllow["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/security/shield.png' width='28' height='28' style='width:28px;height:28px;max-width:28px;max-height:28px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>aws_networkfirewall_rule_group.allow_db_cpl_protocols_rg</b>"]:::policy
+    RGFQDN["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/security/shield.png' width='28' height='28' style='width:28px;height:28px;max-width:28px;max-height:28px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>aws_networkfirewall_rule_group.databricks_fqdns_rg</b>"]:::policy
+    RouteNAT["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/network/vpc.png' width='28' height='28' style='width:28px;height:28px;max-width:28px;max-height:28px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>aws_route.db_nat_firewall</b>"]:::res
+    RouteIGW["<img src='https://raw.githubusercontent.com/mingrammer/diagrams/master/resources/aws/network/vpc.png' width='28' height='28' style='width:28px;height:28px;max-width:28px;max-height:28px;display:block;margin:0 auto;object-fit:contain;' /><br/><b>aws_route.db_igw_nat_firewall</b>"]:::res
 
     Root --> Firewall
     Root --> Policy
@@ -150,5 +147,5 @@ This module does not export outputs.
 
 ### 7.2 Internal References
 - [Terraform Contract (`TERRAFORM.md`)](./TERRAFORM.md)
-- [Hub VPC Module (`003.hub_vpc`)](file:///modules/01.networking/003.hub_vpc)
+- [Hub VPC Module (`004.hub_vpc`)](file:///modules/01.networking/004.hub_vpc)
 - [Authoritative README Template](file:///.ai/README_TEMPLATE.md)
