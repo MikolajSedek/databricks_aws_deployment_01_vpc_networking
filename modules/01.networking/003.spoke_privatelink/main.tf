@@ -15,8 +15,8 @@
 resource "aws_subnet" "spoke_vpce_subnet" {
   vpc_id                  = var.spoke_vpc_id
   count                   = length(var.spoke_vpce_subnets_cidr)
-  cidr_block              = element(var.spoke_vpce_subnets_cidr, count.index)
-  availability_zone       = element(var.availability_zones, count.index)
+  cidr_block              = var.spoke_vpce_subnets_cidr[count.index]
+  availability_zone       = var.availability_zones[count.index]
   map_public_ip_on_launch = false
 
   tags = merge(var.tags, {
