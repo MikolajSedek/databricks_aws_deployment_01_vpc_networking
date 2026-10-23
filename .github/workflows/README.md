@@ -55,7 +55,7 @@ flowchart TD
    - Runs pre-commit hooks across all files (formatting, linting, secret detection, security scanning) while skipping documentation generation.
 2. **Step 2: Terraform Validate & Plan ([`dpl-02-plan.yml`](file:///.github/workflows/dpl-02-plan.yml))**:
    - Runs on all commits across any branch and on pull requests targeting `main`.
-   - Configures AWS credentials and generates AWS shared profile files.
+   - Configures AWS credentials, assumes IAM role, and writes shared profile via configure-aws-credentials action.
    - Caches Terraform provider plugins (`.terraform` directory) keyed by `.terraform.lock.hcl`.
    - Checks code formatting, runs `terraform init`, and executes `terraform validate`.
    - Generates a speculative execution plan (`tfplan`) and human-readable plan summary (`tfplan.txt`).
